@@ -1,0 +1,16 @@
+{
+  "name": "insight-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"API,DASH\" -c \"blue,green\" \"npm run backend\" \"npm run dashboard:dev\"",
+    "backend": "cd backend && ../scripts/run-backend.sh",
+    "dashboard:dev": "npm run dev --prefix dashboard",
+    "dashboard:build": "npm run build --prefix dashboard",
+    "seed": "cd backend && ../scripts/run-backend.sh seed",
+    "simulate": "cd backend && ../scripts/run-backend.sh simulate"
+  },
+  "dependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
