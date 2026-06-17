@@ -1,6 +1,7 @@
 import sqlite3
 import threading
 from pathlib import Path
+from typing import Any
 
 
 class Database:
@@ -92,6 +93,8 @@ class Database:
                 tags TEXT DEFAULT '[]',
                 evidence TEXT DEFAULT '[]',
                 alternatives TEXT DEFAULT '[]',
+                app_summary TEXT DEFAULT '{}',
+                raw_timeline_summary TEXT DEFAULT '',
                 raw_llm_response TEXT,
                 created_at TEXT DEFAULT (datetime('now')),
                 FOREIGN KEY (session_id) REFERENCES sessions(id)
@@ -101,6 +104,26 @@ class Database:
                 ON intent_records(session_id);
         """)
         conn.commit()
+        self._migrate()
+
+    def _migrate(self):
+        conn = self._get_connection()
+        migrations: list[tuple[str, Any]] = [
+            (
+                "ALTER TABLE intent_records ADD COLUMN app_summary TEXT DEFAULT '{}'",
+                "app_summary",
+            ),
+            (
+                "ALTER TABLE intent_records ADD COLUMN raw_timeline_summary TEXT DEFAULT ''",
+                "raw_timeline_summary",
+            ),
+        ]
+        for sql, col_name in migrations:
+            try:
+                conn.execute(sql)
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
 
     def execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         conn = self._get_connection()
