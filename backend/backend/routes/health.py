@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+from backend.config import settings
+
 router = APIRouter(tags=["health"])
 
 
@@ -8,5 +10,5 @@ async def health():
     return {
         "status": "ok",
         "agent": "disconnected",
-        "version": "0.1.0",
+        "version": settings.api_version,
     }

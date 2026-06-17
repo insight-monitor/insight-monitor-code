@@ -1,6 +1,4 @@
-from datetime import datetime, timezone
-
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from backend.models.raw_event import RawEvent
 from backend.storage.database import Database

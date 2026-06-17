@@ -3,19 +3,21 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from backend.config import settings
+
 
 class Database:
     _instance: "Database | None" = None
     _lock = threading.Lock()
 
-    def __init__(self, db_path: str = "./data/insight_monitor.db"):
-        self.db_path = db_path
+    def __init__(self, db_path: str | None = None):
+        self.db_path = db_path or settings.db_path
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
         self._local = threading.local()
 
     @classmethod
-    def get_instance(cls, db_path: str = "./data/insight_monitor.db") -> "Database":
+    def get_instance(cls, db_path: str | None = None) -> "Database":
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
