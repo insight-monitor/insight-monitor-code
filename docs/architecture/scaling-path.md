@@ -1,0 +1,77 @@
+---
+title: MVP Scaling Path
+type: concept
+domain: architecture
+priority: medium
+status: draft
+version: 1.0.0
+---
+
+# MVP Scaling Path
+
+This document describes what the MVP does NOT do yet — but what the architecture preserves so that future additions don't require rewrites.
+
+## Architecture Decisions That Survive Scaling
+
+### 1. Decoupled layers via HTTP
+
+The three layers (Capture, API, Dashboard) communicate over HTTP. This means:
+- The capture agent can be replaced (e.g., Electron app with more UI) without touching backend
+- The dashboard can be swapped for a mobile app without changing inference
+- Multiple capture agents can post to the same API instance (multi-device support)
+
+### 2. Pydantic models as the schema contract
+
+All data structures (`RawEvent`, `SessionContext`, `IntentRecord`) are defined as Pydantic models in a single place. The TypeScript types in the frontend mirror them. When the schema evolves:
+- Add a field to Pydantic → auto-generated OpenAPI spec → regenerate TypeScript types
+- No manual synchronization between Python and TypeScript
+
+### 3. Configuration-driven capture
+
+The capture agent reads all parameters from environment variables (interval, paths, thresholds). Adding new signal types post-MVP:
+- Add the capture module
+- Add the handler in `agent.py`
+- No hardcoded values to untangle
+
+### 4. Prompt as the product
+
+The inference prompt is a single template file. Changing classification categories, adding new use cases, or tuning for a different environment requires only prompt changes — not code changes.
+
+## Post-MVP Roadmap
+
+### Immediate (Weeks 3-4 after MVP)
+
+| Feature | Why |
+|---|---|
+| Browser extension for full URLs | More accurate URL context than tab titles |
+| Multi-tenant isolation | Need to serve > 1 customer |
+| WebSocket-based real-time updates | Better dashboard experience |
+| Confidence model refinement | Calibrate confidence scores against user feedback |
+
+### Medium-term (Months 2-3)
+
+| Feature | Why |
+|---|---|
+| LanceDB + semantic search | Query historical sessions in natural language |
+| Anomaly detection engine | Rule-based + statistical anomaly on URL/domain patterns |
+| macOS capture agent | Broaden market reach |
+
+### Long-term (Months 4-6)
+
+| Feature | Why |
+|---|---|
+| GUI installer (MSI/DEB/DMG) | Non-technical deployment |
+| Centralized management server | Fleet-wide configuration and monitoring |
+| Celery worker for async inference | Background processing for report generation |
+| User contestability UI | Feedback loop for improving accuracy |
+| Integration APIs (webhooks) | Connect to Slack, Jira, HR systems |
+
+## What NOT to Preserve
+
+| Decision | Replace With | When |
+|---|---|---|
+| SQLite | PostgreSQL or SQLite with replication | Multi-user or multi-instance deployment |
+| Gemini Flash | Domain-fine-tuned model or smaller local model | Inference volume or privacy requirements grow |
+| HTTP polling | WebSocket | Real-time dashboard adopted by supervisors |
+| Single process FastAPI | Docker Compose + multiple services | Need to scale API, inference, and storage independently |
+| CLI agent startup | Systemd service / Windows service | Agent must survive reboots and user logouts |
