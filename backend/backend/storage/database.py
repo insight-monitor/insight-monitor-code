@@ -1,20 +1,23 @@
 import sqlite3
 import threading
 from pathlib import Path
+from typing import Any
+
+from backend.config import settings
 
 
 class Database:
     _instance: "Database | None" = None
     _lock = threading.Lock()
 
-    def __init__(self, db_path: str = "./data/insight_monitor.db"):
-        self.db_path = db_path
+    def __init__(self, db_path: str | None = None):
+        self.db_path = db_path or settings.db_path
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
         self._local = threading.local()
 
     @classmethod
-    def get_instance(cls, db_path: str = "./data/insight_monitor.db") -> "Database":
+    def get_instance(cls, db_path: str | None = None) -> "Database":
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -92,6 +95,8 @@ class Database:
                 tags TEXT DEFAULT '[]',
                 evidence TEXT DEFAULT '[]',
                 alternatives TEXT DEFAULT '[]',
+                app_summary TEXT DEFAULT '{}',
+                raw_timeline_summary TEXT DEFAULT '',
                 raw_llm_response TEXT,
                 created_at TEXT DEFAULT (datetime('now')),
                 FOREIGN KEY (session_id) REFERENCES sessions(id)
@@ -101,6 +106,26 @@ class Database:
                 ON intent_records(session_id);
         """)
         conn.commit()
+        self._migrate()
+
+    def _migrate(self):
+        conn = self._get_connection()
+        migrations: list[tuple[str, Any]] = [
+            (
+                "ALTER TABLE intent_records ADD COLUMN app_summary TEXT DEFAULT '{}'",
+                "app_summary",
+            ),
+            (
+                "ALTER TABLE intent_records ADD COLUMN raw_timeline_summary TEXT DEFAULT ''",
+                "raw_timeline_summary",
+            ),
+        ]
+        for sql, col_name in migrations:
+            try:
+                conn.execute(sql)
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
 
     def execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         conn = self._get_connection()

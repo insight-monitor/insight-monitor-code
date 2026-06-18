@@ -5,6 +5,23 @@ from typing import Any
 from backend.storage.database import Database
 
 
+def _parse_json_fields(row: dict[str, Any], fields: list[str]) -> dict[str, Any]:
+    for field in fields:
+        val = row.get(field)
+        if isinstance(val, str):
+            try:
+                row[field] = json.loads(val)
+            except (json.JSONDecodeError, TypeError):
+                pass
+    return row
+
+
+_SESSION_JSON_FIELDS = ["app_sequence", "active_apps"]
+_INTENT_JSON_FIELDS = [
+    "friction_points", "tags", "evidence", "alternatives", "app_summary",
+]
+
+
 class EventRepository:
     def __init__(self, db: Database):
         self.db = db
@@ -112,19 +129,24 @@ class SessionRepository:
 
     def find_all(self, status: str | None = None, limit: int = 50) -> list[dict]:
         if status:
-            return self.db.fetch_all(
+            rows = self.db.fetch_all(
                 "SELECT * FROM sessions WHERE status = ? ORDER BY start_time DESC LIMIT ?",
                 (status, limit),
             )
-        return self.db.fetch_all(
-            "SELECT * FROM sessions ORDER BY start_time DESC LIMIT ?",
-            (limit,),
-        )
+        else:
+            rows = self.db.fetch_all(
+                "SELECT * FROM sessions ORDER BY start_time DESC LIMIT ?",
+                (limit,),
+            )
+        return [_parse_json_fields(r, _SESSION_JSON_FIELDS) for r in rows]
 
     def find_by_id(self, session_id: str) -> dict | None:
-        return self.db.fetch_one(
+        row = self.db.fetch_one(
             "SELECT * FROM sessions WHERE id = ?", (session_id,),
         )
+        if row:
+            row = _parse_json_fields(row, _SESSION_JSON_FIELDS)
+        return row
 
 
 class IntentRepository:
@@ -138,8 +160,8 @@ class IntentRepository:
                (id, session_id, timestamp, session_type, goal,
                 goal_confidence, friction_points, friction_confidence,
                 category, category_confidence, tags, evidence,
-                alternatives, raw_llm_response)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                alternatives, app_summary, raw_timeline_summary, raw_llm_response)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 record_id,
                 record["session_id"],
@@ -154,6 +176,8 @@ class IntentRepository:
                 json.dumps(record.get("tags", [])),
                 json.dumps(record.get("evidence", [])),
                 json.dumps(record.get("alternatives", [])),
+                json.dumps(record.get("app_summary", {})),
+                record.get("raw_timeline_summary", ""),
                 record.get("raw_llm_response"),
             ),
         )
@@ -161,13 +185,17 @@ class IntentRepository:
         return record_id
 
     def find_by_session(self, session_id: str) -> dict | None:
-        return self.db.fetch_one(
+        row = self.db.fetch_one(
             "SELECT * FROM intent_records WHERE session_id = ? ORDER BY created_at DESC",
             (session_id,),
         )
+        if row:
+            row = _parse_json_fields(row, _INTENT_JSON_FIELDS)
+        return row
 
     def find_all(self, limit: int = 50) -> list[dict]:
-        return self.db.fetch_all(
+        rows = self.db.fetch_all(
             "SELECT * FROM intent_records ORDER BY created_at DESC LIMIT ?",
             (limit,),
         )
+        return [_parse_json_fields(r, _INTENT_JSON_FIELDS) for r in rows]
