@@ -1,3 +1,4 @@
+import os
 import time
 import logging
 from pathlib import Path
@@ -12,22 +13,34 @@ logger = logging.getLogger(__name__)
 
 
 class CaptureAgent:
-    def __init__(self, api_url: str = "http://localhost:8000"):
-        self.api_url = api_url
-        self.screenshot_dir = Path("./data/screenshots")
+    def __init__(
+        self,
+        api_url: str | None = None,
+        screenshot_dir: str | None = None,
+        interval: int | None = None,
+    ):
+        self.api_url = api_url or os.getenv(
+            "API_URL", "http://localhost:8002"
+        )
+        screenshot_dir_path = screenshot_dir or os.getenv(
+            "SCREENSHOT_DIR", "./data/screenshots"
+        )
+        self.screenshot_dir = Path(screenshot_dir_path)
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
 
         self.window_tracker = WindowTracker()
         self.screenshot_capture = ScreenshotCapture(self.screenshot_dir)
         self.input_monitor = InputMonitor()
-        self.event_sender = EventSender(api_url)
+        self.event_sender = EventSender(self.api_url)
 
-        self.interval = 30
+        self.interval = interval or int(
+            os.getenv("CAPTURE_INTERVAL_SECONDS", "30")
+        )
         self.running = False
 
     def start(self):
         self.running = True
-        logger.info("Capture agent started")
+        logger.info("Capture agent started (api=%s, interval=%ds)", self.api_url, self.interval)
 
         self.window_tracker.start()
         self.input_monitor.start()
@@ -86,6 +99,7 @@ class CaptureAgent:
         self.running = False
         self.window_tracker.stop()
         self.input_monitor.stop()
+        self.event_sender.close()
         logger.info("Capture agent stopped")
 
 

@@ -7,6 +7,7 @@
     "backend": "cd backend && ../scripts/run-backend.sh",
     "dashboard:dev": "npm run dev --prefix dashboard",
     "dashboard:build": "npm run build --prefix dashboard",
+    "capture": "cd capture && python agent.py",
     "seed": "cd backend && ../scripts/run-backend.sh seed",
     "simulate": "cd backend && ../scripts/run-backend.sh simulate"
   },

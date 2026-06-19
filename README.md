@@ -4,6 +4,53 @@ Monitoring that understands *intent*, not just apps.
 
 ---
 
+## Project Status — MVP 14-Day Plan (Jun 15 → Jun 29)
+
+```
+MVP Progress: ████████░░░░░░░░ 4/14 days (28%)
+Days: [1][2][3][4] [5] [6] [7] [8─14]
+      ✅✅✅✅ 🔜 🔜 🔜 🔜
+```
+
+### Day 1 — Jun 15 — Project Scaffold ✅
+- Pydantic models (`RawEvent`, `SessionContext`, `IntentRecord`)
+- Poetry project setup + FastAPI app skeleton with CORS
+- SQLite schema (WAL mode, thread-safe) + CRUD repositories
+- React + Vite + TailwindCSS scaffold
+- Capture agent skeleton (main loop, event sender)
+- Root scripts with concurrently
+
+### Day 2 — Jun 16 — Window Tracking + API Routes ✅
+- Window tracker (`xdotool` + `xprop`, browser tab detection, URL extraction)
+- `GET /health`, `POST /events`, `GET /events` endpoints
+- `GET /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/intent` endpoints
+- Simulate session script (Riwi/BPO realistic events)
+- Seed DB script
+
+### Day 3 — Jun 17 — Screenshot + Input Monitor + Batch API ✅
+- Screenshot capture (`mss`, configurable interval via env)
+- Input frequency monitor (`pynput`: clicks/min, keystrokes/min)
+- `POST /events/batch` endpoint
+- `GET /sessions` with status filter + limit
+- Frontend API client module + live health check indicator
+- Capture agent: env var support, graceful shutdown, port fix
+- Fix Vite proxy (`/api` rewrite → backend)
+
+### Day 4 — Jun 18 — Session Builder + Close Detection ✅
+- Session builder: groups RawEvents by time + inactivity gap (8 min default)
+- Auto-close detection (gap > threshold → close), explicit `POST /sessions/{id}/close`
+- `GET /sessions/{id}` now includes events array + intent
+- Background task runs session builder every 30s
+- Frontend session list table (status, duration, events, apps)
+
+### Day 5-14 — Jun 19-29 🔜
+- Inference pipeline (LLM service, prompt builder, intent parser)
+- Dashboard detail views, confidence badges, timeline
+- Unit/integration tests, BPO/Riwi demo scenarios
+- Final dry run + stakeholder presentation
+
+---
+
 ## Quick Start
 
 ### Prerequisites
@@ -93,7 +140,8 @@ Full interactive docs at `http://localhost:8002/docs`.
 | `GET` | `/events` | List recent events (`?limit=50`) |
 | `GET` | `/events/session/{id}` | Events for a specific session |
 | `GET` | `/sessions` | List sessions (`?status=open&limit=50`) |
-| `GET` | `/sessions/{id}` | Session detail with intent |
+| `GET` | `/sessions/{id}` | Session detail with events + intent |
+| `POST` | `/sessions/{id}/close` | Manually close a session |
 | `GET` | `/sessions/{id}/intent` | Session intent record only |
 
 ---
@@ -107,23 +155,24 @@ Full interactive docs at `http://localhost:8002/docs`.
 | `npm run dashboard:dev` | Start dashboard only |
 | `npm run seed` | Load test sessions into SQLite |
 | `npm run simulate` | Simulate Riwi/BPO activity events |
+| `npm run capture` | Start the capture agent (screenshots + input monitor) |
 | `npm run dashboard:build` | Production build of dashboard |
 
 ---
 
 ## Team Guide
 
-### Capture Agent (Python) — Skeleton working, needs Linux testing
-Files: `capture/`. Next: test on real Ubuntu, fix Wayland compatibility.
+### Capture Agent (Python) — Working (requires X11)
+Files: `capture/`. Captures screenshots (`mss`), input frequency (`pynput`), window focus + browser tabs (`xdotool` + `xprop`). Sends events to API via HTTP. Configurable via env vars. Requires Linux with X11 (not Wayland).
 
-### Backend API (FastAPI + SQLite) — Working with all CRUD routes
-Files: `backend/backend/`. Next: `pipeline/session_builder.py`.
+### Backend API (FastAPI + SQLite) — Working with all CRUD routes + session builder
+Files: `backend/backend/`. Includes background session builder (auto-close after inactivity gap), batch ingest, and manual close endpoint.
 
 ### Inference Pipeline (Gemini API) — Models defined, pipeline pending
-Files: `backend/pipeline/` + `backend/services/`. Next: session_builder, llm_service, prompt_builder, intent_parser.
+Files: `backend/pipeline/` + `backend/services/`. Next: llm_service, prompt_builder, intent_parser.
 
-### Frontend (React + TypeScript + Tailwind) — Scaffolded, needs UI
-Files: `dashboard/`. Next: session list, detail view, confidence badges, agent status.
+### Frontend (React + TypeScript + Tailwind) — Live health indicator + session list
+Files: `dashboard/`. Shows live backend status, session table (status, duration, events, apps). Next: detail view, confidence badges, timeline.
 
 ---
 

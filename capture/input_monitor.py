@@ -13,6 +13,8 @@ class InputMonitor:
         self._running = False
         self._start_time = 0.0
         self._thread: threading.Thread | None = None
+        self._mouse_listener = None
+        self._keyboard_listener = None
 
     def start(self):
         self._running = True
@@ -33,14 +35,14 @@ class InputMonitor:
                 with self._lock:
                     self._key_count += 1
 
-            mouse_listener = mouse.Listener(on_click=on_click)
-            keyboard_listener = keyboard.Listener(on_press=on_press)
+            self._mouse_listener = mouse.Listener(on_click=on_click)
+            self._keyboard_listener = keyboard.Listener(on_press=on_press)
 
-            mouse_listener.start()
-            keyboard_listener.start()
+            self._mouse_listener.start()
+            self._keyboard_listener.start()
 
-            mouse_listener.join()
-            keyboard_listener.join()
+            self._mouse_listener.join()
+            self._keyboard_listener.join()
         except Exception as e:
             logger.error("Input monitor error: %s", e)
 
@@ -63,6 +65,10 @@ class InputMonitor:
 
     def stop(self):
         self._running = False
+        if self._mouse_listener:
+            self._mouse_listener.stop()
+        if self._keyboard_listener:
+            self._keyboard_listener.stop()
         if self._thread:
             self._thread.join(timeout=3)
         logger.info("Input monitor stopped")
