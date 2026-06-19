@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   sqlite-web:
     image: coleifer/sqlite-web
-    container_name: insight_monitor_mvp_viewer
+    container_name: insight_mvp_db_viewer
     restart: always
     ports:
       - "8081:8080"
