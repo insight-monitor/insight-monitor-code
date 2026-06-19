@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # Base de datos MySQL con el esquema completo del DER
@@ -12,7 +11,7 @@ services:
       MYSQL_USER: insight_user
       MYSQL_PASSWORD: insight_password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       # Este script se ejecuta automáticamente la primera vez que se crea el contenedor
