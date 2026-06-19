@@ -11,6 +11,8 @@ version: 1.0.0
 
 SQLite database with WAL mode, thread-safe singleton connection. Tables created at `backend/backend/storage/database.py:_init_schema()`.
 
+![Diagrama Entidad-Relación Completo](img/der-complete.png)
+
 ## Tables
 
 ### `raw_events`

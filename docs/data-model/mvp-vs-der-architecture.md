@@ -34,6 +34,8 @@ El foco del MVP (Día 1 & 2) es probar el ciclo cerrado de **Captura Local → I
 
 El DER oficial documenta la **arquitectura objetivo en la nube**, la cual será necesaria una vez que el sistema se convierta en una plataforma SaaS Multi-Tenant.
 
+![Diagrama Entidad-Relación Completo](img/der-complete.png)
+
 **Características del esquema DER:**
 - **Motor:** Base de datos relacional robusta (ej. MySQL/PostgreSQL).
 - **Modo:** Servidor centralizado.
