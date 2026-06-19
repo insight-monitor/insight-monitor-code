@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  sqlite-web:
+    image: coleifer/sqlite-web
+    container_name: insight_monitor_mvp_viewer
+    restart: always
+    ports:
+      - "8081:8080"
+    volumes:
+      # Montamos el archivo de la base de datos real del MVP del proyecto
+      - ../../backend/data:/data
+    command: /data/insight_monitor.db
+    environment:
+      - SQLITE_WEB_PASSWORD=mvppassword
