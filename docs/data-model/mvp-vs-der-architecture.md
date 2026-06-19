@@ -7,11 +7,11 @@ status: accepted
 version: 1.0.0
 ---
 
-# 🎯 Database Architecture: MVP vs Full DER
+#  Database Architecture: MVP vs Full DER
 
 Este documento define claramente las fronteras de arquitectura de datos entre el **MVP (Minimum Viable Product)** actualmente en desarrollo y la visión a largo plazo plasmada en el **Diagrama Entidad-Relación (DER) Completo**.
 
-## 🚀 Fase 1: El MVP de Escritorio (Estado Actual)
+## Fase 1: El MVP de Escritorio (Estado Actual)
 
 El foco del MVP (Día 1 & 2) es probar el ciclo cerrado de **Captura Local → Inferencia IA Local**. Para evitar sobreingeniería y acelerar el desarrollo, se ha adoptado una arquitectura temporal simplificada.
 
@@ -30,7 +30,7 @@ El foco del MVP (Día 1 & 2) es probar el ciclo cerrado de **Captura Local → I
 
 ---
 
-## ☁️ Fase 2: Cloud Enterprise (El DER Completo)
+## Fase 2: Cloud Enterprise (El DER Completo)
 
 El DER oficial documenta la **arquitectura objetivo en la nube**, la cual será necesaria una vez que el sistema se convierta en una plataforma SaaS Multi-Tenant.
 
@@ -49,6 +49,6 @@ Los siguientes módulos documentados en el DER **NO formarán parte del MVP** y 
 4. **Módulo de Reportes & Auditoría**: Históricos analíticos precalculados (`reporte`) y registro de accesos al sistema (`auditoria`).
 5. **Normalización Estricta**: Separación de `evento` base de la metadata de `captura_pantalla`, `texto_ocr` y `ventana_activa`.
 
-## 🔄 Estrategia de Migración Futura
+## Estrategia de Migración Futura
 
 El diseño actual de `raw_events` y `sessions` incluye identificadores UUID generados localmente. En la Fase 2, un servicio de sincronización (Sync Agent) tomará estos registros locales de SQLite y los insertará en el clúster MySQL central, inyectando los UUIDs foráneos del `id_usuario` e `id_agente` que correspondan al token de autenticación del dispositivo.

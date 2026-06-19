@@ -16,7 +16,7 @@ Dado que la arquitectura MVP usa **SQLite** (un archivo local) en lugar de un se
 Abre una terminal en esta carpeta (`infrastructure/db-mvp/`) y ejecuta:
 
 ```bash
-docker-compose up -d
+sudo docker compose up -d
 ```
 
 ## 👁️ Visualizar las 3 Tablas del MVP
