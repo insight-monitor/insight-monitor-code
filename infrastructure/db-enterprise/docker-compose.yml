@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL con el esquema completo del DER
+  mysql-enterprise:
+    image: mysql:8.0
+    container_name: insight_monitor_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: insight_monitor_enterprise
+      MYSQL_USER: insight_user
+      MYSQL_PASSWORD: insight_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Este script se ejecuta automáticamente la primera vez que se crea el contenedor
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - insight_network
+
+  # Visualizador de Base de Datos (phpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: insight_monitor_pma
+    restart: always
+    environment:
+      PMA_HOST: mysql-enterprise
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+      UPLOAD_LIMIT: 300M
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql-enterprise
+    networks:
+      - insight_network
+
+volumes:
+  mysql_data:
+
+networks:
+  insight_network:
+    driver: bridge
