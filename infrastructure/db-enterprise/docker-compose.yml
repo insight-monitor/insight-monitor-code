@@ -19,23 +19,6 @@ services:
     networks:
       - insight_network
 
-  # Visualizador de Base de Datos (phpMyAdmin)
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: insight_monitor_pma
-    restart: always
-    environment:
-      PMA_HOST: mysql-enterprise
-      PMA_USER: root
-      PMA_PASSWORD: rootpassword
-      UPLOAD_LIMIT: 300M
-    ports:
-      - "8080:80"
-    depends_on:
-      - mysql-enterprise
-    networks:
-      - insight_network
-
 volumes:
   mysql_data:
 
