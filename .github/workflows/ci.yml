@@ -34,9 +34,8 @@ jobs:
         with:
           python-version: "3.11"
       - uses: abatilo/actions-poetry@v3
-      - run: poetry install
-      - run: poetry run python ../tests/validate_models.py
-      - run: poetry run python ../tests/test_new_components.py
+      - run: poetry install --with dev
+      - run: poetry run pytest -v --tb=short
 
   typescript:
     name: TypeScript check

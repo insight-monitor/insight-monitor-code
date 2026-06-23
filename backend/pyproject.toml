@@ -23,6 +23,11 @@ package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 ruff = "*"
+pytest = "*"
+
+[tool.pytest.ini_options]
+testpaths = ["../tests"]
+python_files = ["test_*.py", "validate_*.py"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
