@@ -2,21 +2,33 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+dist/
+*.egg
 .venv/
 venv/
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+frontend/
 
-# Local data (SQLite databases are generated at runtime)
-data/
+# Node
+node_modules/
+
+# Env
+.env
+
+# OS
+.DS_Store
+*.log
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS
-.DS_Store
-Thumbs.db
+# Build
+dashboard/dist/
 
-# Environment
-.env
+# Local agent skills (private per-dev)
+.agents/
+skills-lock.json
