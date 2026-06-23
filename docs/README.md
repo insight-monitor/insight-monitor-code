@@ -12,4 +12,4 @@ This directory contains the **technical documentation** for the Insight Monitor 
 | `configuration/` | Configuration model and deployment options |
 | `api/` | REST API reference |
 | `capture-agent/` | Capture agent internals and development |
-| `development/` | Setup guide, git workflow, legacy code reference |
+| `development/` | Setup guide, git workflow, testing guide, legacy code reference |
