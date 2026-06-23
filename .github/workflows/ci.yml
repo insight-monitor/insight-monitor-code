@@ -20,7 +20,7 @@ jobs:
           python-version: "3.11"
       - uses: abatilo/actions-poetry@v3
       - run: poetry install --with dev
-      - run: poetry run ruff check backend/
+      - run: poetry run ruff check .
 
   python-test:
     name: Python tests
@@ -36,6 +36,7 @@ jobs:
       - uses: abatilo/actions-poetry@v3
       - run: poetry install
       - run: poetry run python ../tests/validate_models.py
+      - run: poetry run python ../tests/test_new_components.py
 
   typescript:
     name: TypeScript check
