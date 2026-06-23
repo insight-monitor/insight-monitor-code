@@ -23,7 +23,7 @@ package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 ruff = "*"
-pytest = "*"
+pytest = ">=8.0"
 
 [tool.pytest.ini_options]
 testpaths = ["../tests"]

@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.11"
       - uses: abatilo/actions-poetry@v3
-      - run: poetry install --with dev
+      - run: poetry install
       - run: poetry run ruff check .
 
   python-test:
@@ -50,6 +50,20 @@ jobs:
           node-version: "20"
       - run: npm ci
       - run: npx tsc --noEmit
+
+  dashboard-lint:
+    name: Dashboard lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm run lint
 
   capture-lint:
     name: Capture agent lint
