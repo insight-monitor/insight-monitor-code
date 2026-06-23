@@ -1,3 +1,5 @@
+"""Tests for Pydantic model validation (RawEvent, IntentRecord)."""
+
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -9,7 +11,9 @@ from backend.models.intent_record import IntentRecord
 
 
 class TestRawEvent:
-    def test_valid_raw_event(self):
+    """RawEvent model — required fields, optional fields, type validation."""
+
+    def test_should_accept_valid_event_with_all_fields(self):
         data = {
             "event_id": str(uuid4()),
             "event_type": EventType.WINDOW_FOCUS,
@@ -26,7 +30,7 @@ class TestRawEvent:
         assert event.pid == 1234
         assert event.screenshot_path is None
 
-    def test_minimal_raw_event(self):
+    def test_should_accept_event_with_only_required_fields(self):
         event = RawEvent(
             event_id=str(uuid4()),
             event_type=EventType.SCREENSHOT,
@@ -34,9 +38,10 @@ class TestRawEvent:
             source="capture-agent",
         )
         assert event.window_title is None
+        assert event.clicks_per_min is None
 
-    def test_invalid_event_type(self):
-        with pytest.raises(ValidationError):
+    def test_should_reject_invalid_event_type(self):
+        with pytest.raises(ValidationError, match="event_type"):
             RawEvent(
                 event_id=str(uuid4()),
                 event_type="invalid",
@@ -44,13 +49,15 @@ class TestRawEvent:
                 source="test",
             )
 
-    def test_missing_required_fields(self):
+    def test_should_reject_missing_required_fields(self):
         with pytest.raises(ValidationError):
             RawEvent()
 
 
 class TestIntentRecord:
-    def test_valid_intent_record(self):
+    """IntentRecord model — session types, confidence ranges, field validation."""
+
+    def test_should_accept_valid_intent_record(self):
         record = IntentRecord(
             record_id=str(uuid4()),
             session_id=str(uuid4()),
@@ -63,10 +70,13 @@ class TestIntentRecord:
         assert record.category == "ambiguous"
 
     @pytest.mark.parametrize("session_type", [
-        "skill_development", "applied_learning",
-        "peer_collaboration", "ambiguous", "personal",
+        "skill_development",
+        "applied_learning",
+        "peer_collaboration",
+        "ambiguous",
+        "personal",
     ])
-    def test_valid_session_types(self, session_type):
+    def test_should_accept_all_valid_session_types(self, session_type):
         IntentRecord(
             record_id=str(uuid4()),
             session_id=str(uuid4()),
@@ -76,8 +86,8 @@ class TestIntentRecord:
             goal_confidence=0.5,
         )
 
-    def test_invalid_session_type(self):
-        with pytest.raises(ValidationError):
+    def test_should_reject_invalid_session_type(self):
+        with pytest.raises(ValidationError, match="session_type"):
             IntentRecord(
                 record_id=str(uuid4()),
                 session_id=str(uuid4()),
@@ -87,8 +97,8 @@ class TestIntentRecord:
                 goal_confidence=0.5,
             )
 
-    def test_goal_confidence_out_of_range(self):
-        with pytest.raises(ValidationError):
+    def test_should_reject_goal_confidence_above_one(self):
+        with pytest.raises(ValidationError, match="goal_confidence"):
             IntentRecord(
                 record_id=str(uuid4()),
                 session_id=str(uuid4()),
@@ -98,8 +108,8 @@ class TestIntentRecord:
                 goal_confidence=1.5,
             )
 
-    def test_category_confidence_out_of_range(self):
-        with pytest.raises(ValidationError):
+    def test_should_reject_category_confidence_above_one(self):
+        with pytest.raises(ValidationError, match="category_confidence"):
             IntentRecord(
                 record_id=str(uuid4()),
                 session_id=str(uuid4()),
