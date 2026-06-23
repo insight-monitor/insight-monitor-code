@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import time
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -81,7 +80,6 @@ class SessionBuilder:
 
     def _create_session(self, first_event: dict) -> str:
         session_id = str(uuid4())
-        now = datetime.now(timezone.utc).isoformat()
         session = {
             "id": session_id,
             "start_time": first_event["timestamp"],
