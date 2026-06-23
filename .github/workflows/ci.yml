@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.11"
       - uses: abatilo/actions-poetry@v3
-      - run: poetry install
+      - run: poetry install --with dev
       - run: poetry run ruff check backend/
 
   python-test:
