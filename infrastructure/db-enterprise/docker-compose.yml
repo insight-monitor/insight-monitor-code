@@ -1,20 +1,20 @@
 
 services:
-  # Base de datos MySQL con el esquema completo del DER
+  # MySQL database with the complete ERD schema
   mysql-enterprise:
     image: mysql:8.0
     container_name: insight_monitor_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: insight_monitor_enterprise
-      MYSQL_USER: insight_user
-      MYSQL_PASSWORD: insight_password
+      MYSQL_USER: ${DB_USER:-insight_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-insight_password}
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      # Este script se ejecuta automáticamente la primera vez que se crea el contenedor
+      # This script runs automatically on first container creation
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - insight_network

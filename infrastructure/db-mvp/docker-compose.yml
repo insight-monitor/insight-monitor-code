@@ -6,8 +6,8 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      # Montamos el archivo de la base de datos real del MVP del proyecto
+      # Mount the real MVP project database file
       - ../../backend/data:/data
     command: sqlite_web -H 0.0.0.0 -x /data/insight_monitor.db
     environment:
-      - SQLITE_WEB_PASSWORD=mvppassword
+      - SQLITE_WEB_PASSWORD=${SQLITE_WEB_PASSWORD:-mvppassword}

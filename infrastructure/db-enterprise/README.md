@@ -1,66 +1,66 @@
-# Insight Monitor Enterprise (Fase 2 DER Completo)
+# Insight Monitor Enterprise (Phase 2 Full ERD)
 
-Este directorio contiene la infraestructura local en **Docker** para levantar el **Diagrama Entidad-Relación (DER) Completo** del proyecto, usando MySQL.
+This directory contains the local **Docker** infrastructure to spin up the **Complete Entity-Relationship Diagram (ERD)** of the project using MySQL.
 
-Aunque el MVP (Día 1 & 2) utiliza SQLite y 3 tablas, este contenedor permite **visualizar, validar y probar** toda la estructura final pensada para la nube (módulo organizacional, agentes, OCR, reportes, privacidad, etc).
+Although the MVP (Day 1 & 2) uses SQLite with 3 tables, this container allows you to **visualize, validate, and test** the entire final architecture designed for the cloud (organizational module, agents, OCR, reports, privacy, etc.).
 
-## Requisitos
+## Requirements
 
-- [Docker](https://docs.docker.com/get-docker/) instalado.
-- [Docker Compose](https://docs.docker.com/compose/install/) instalado.
-- Puertos `3306` (MySQL) y `8080` (Visor) libres en tu máquina.
+- [Docker](https://docs.docker.com/get-docker/) installed.
+- [Docker Compose](https://docs.docker.com/compose/install/) installed.
+- Ports `3306` (MySQL) and `8080` (Viewer) must be free on your machine.
 
-##  Cómo levantar la base de datos
+## How to Start the Database
 
-Abre una terminal en esta misma carpeta (`infrastructure/db-enterprise/`) y ejecuta:
+Open a terminal in this directory (`infrastructure/db-enterprise/`) and run:
 
 ```bash
 docker-compose up -d
 ```
 
-## ⚙️ ¿Qué hace este Docker?
+## What Does This Docker Do?
 
-Cuando ejecutas el comando `docker compose up -d`, suceden dos cosas:
-1. Se descarga y levanta la imagen oficial de **MySQL 8.0** en un contenedor aislado.
-2. Automáticamente lee el archivo `init.sql` que acompaña a este directorio y **ejecuta todo el esquema del DER Completo**, creando la estructura de Módulos (Organizacional, Agentes, Monitoreo, etc.) con sus respectivas tablas, enumeradores (ENUM) y llaves foráneas. Todo esto lo expone en el puerto **3307**.
+When you execute `docker compose up -d`, two things happen:
+1. It downloads and starts the official **MySQL 8.0** image in an isolated container.
+2. It automatically reads the `init.sql` file in this directory and **executes the entire ERD schema**, creating all Module structures (Organizational, Agents, Monitoring, etc.) with their respective tables, ENUMs, and foreign keys. Everything is exposed on port **3307**.
 
-## 🔌 Cómo conectar tu IDE (DBeaver)
+## How to Connect Your IDE (DBeaver)
 
-Como buena práctica profesional, se eliminó el visor web inseguro. Para interactuar con la base de datos debes conectarla a un gestor como **DBeaver** o **DataGrip**.
+As a good professional practice, the insecure web viewer was removed. To interact with the database you must connect a manager like **DBeaver** or **DataGrip**.
 
-Sigue estos pasos en DBeaver:
+Follow these steps in DBeaver:
 
-1. Haz clic en **Nueva Conexión** (ícono de enchufe).
-2. Selecciona **MySQL** y haz clic en Siguiente.
-3. Rellena las credenciales con estos datos exactos:
+1. Click **New Connection** (plug icon).
+2. Select **MySQL** and click Next.
+3. Fill in the credentials with these exact values:
    - **Server Host:** `localhost`
-   - **Port:** `3307` *(¡Cuidado! No uses 3306 para evitar chocar con tu base local)*
+   - **Port:** `3307` *(Be careful! Do not use 3306 to avoid conflicting with your local database)*
    - **Database:** `insight_monitor_enterprise`
    - **Username:** `root`
    - **Password:** `rootpassword`
-4. **¡Paso clave para MySQL 8!** Ve a la pestaña superior llamada **"Driver properties"**.
-   - Busca la propiedad `allowPublicKeyRetrieval`.
-   - Cámbiala de `false` a **`true`**.
-5. Clic en **Test Connection** para validar y luego en **Finish**.
+4. **Key step for MySQL 8!** Go to the **"Driver properties"** tab.
+   - Find the `allowPublicKeyRetrieval` property.
+   - Change it from `false` to **`true`**.
+5. Click **Test Connection** to validate, then **Finish**.
 
-Ya podrás abrir la base de datos y ver todas las categorías de tablas construidas a partir de tu diagrama oficial.
+You can now open the database and see all table categories built from your official diagram.
 
-## 🗄️ Credenciales para Conexión desde Código (Opcional)
+## Credentials for Code Connection (Optional)
 
-Si alguna vez decides conectar el backend en Python a esta base de datos en vez del SQLite, usa la siguiente URI de SQLAlchemy:
+If you ever decide to connect the Python backend to this database instead of SQLite, use the following SQLAlchemy URI:
 
 ```
 mysql+pymysql://insight_user:insight_password@localhost:3306/insight_monitor_enterprise
 ```
 
-## Apagar o reiniciar la BD
+## Stop or Restart the Database
 
-Para detener los contenedores (sin borrar los datos):
+To stop the containers (without deleting data):
 ```bash
 docker-compose stop
 ```
 
-Para destruirlos y **borrar** la base de datos (por si quieres regenerarla o modificar el `init.sql`):
+To destroy them and **delete** the database (in case you want to regenerate it or modify `init.sql`):
 ```bash
 docker-compose down -v
 ```

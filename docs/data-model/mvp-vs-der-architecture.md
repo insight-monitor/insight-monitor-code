@@ -7,50 +7,50 @@ status: accepted
 version: 1.0.0
 ---
 
-#  Database Architecture: MVP vs Full DER
+# Database Architecture: MVP vs Full DER
 
-Este documento define claramente las fronteras de arquitectura de datos entre el **MVP (Minimum Viable Product)** actualmente en desarrollo y la visión a largo plazo plasmada en el **Diagrama Entidad-Relación (DER) Completo**.
+This document clearly defines the data architecture boundaries between the **MVP (Minimum Viable Product)** currently in development and the long-term vision captured in the **Complete Entity-Relationship Diagram (ERD)**.
 
-## Fase 1: El MVP de Escritorio (Estado Actual)
+## Phase 1: The Desktop MVP (Current State)
 
-El foco del MVP (Día 1 & 2) es probar el ciclo cerrado de **Captura Local → Inferencia IA Local**. Para evitar sobreingeniería y acelerar el desarrollo, se ha adoptado una arquitectura temporal simplificada.
+The MVP focus (Day 1 & 2) is to test the closed loop of **Local Capture → Local AI Inference**. To avoid over-engineering and accelerate development, a simplified temporary architecture has been adopted.
 
-**Características del esquema MVP:**
-- **Motor:** SQLite local (`insight_monitor.db`).
-- **Modo:** WAL (Write-Ahead Logging) para concurrencia segura entre hilos.
-- **Alcance:** Monousuario estricto. La máquina local equivale a todo el contexto.
+**MVP schema characteristics:**
+- **Engine:** Local SQLite (`insight_monitor.db`).
+- **Mode:** WAL (Write-Ahead Logging) for safe concurrency between threads.
+- **Scope:** Strictly single-user. The local machine equals the entire context.
 
-### Tablas Implementadas (El "Qué" del MVP)
+### Implemented Tables (The "What" of the MVP)
 
-1. **`raw_events`**: Unifica los conceptos de evento, ventana activa y registro de capturas en un solo registro atómico temporal.
-2. **`sessions`**: Agrupa ventanas de tiempo de trabajo, omitiendo cualquier relación foránea hacia usuarios, empresas o agentes de la nube.
-3. **`intent_records`**: Guarda el resultado de la inferencia IA local de forma denormalizada.
+1. **`raw_events`**: Unifies the concepts of event, active window, and capture log into a single temporary atomic record.
+2. **`sessions`**: Groups work time windows, omitting any foreign key relationships to users, companies, or cloud agents.
+3. **`intent_records`**: Stores the local AI inference result in a denormalized format.
 
-*(Referirse a `database-schema.md` para el esquema exacto de SQLite).*
+*(Refer to `database-schema.md` for the exact SQLite schema).*
 
 ---
 
-## Fase 2: Cloud Enterprise (El DER Completo)
+## Phase 2: Cloud Enterprise (The Complete ERD)
 
-El DER oficial documenta la **arquitectura objetivo en la nube**, la cual será necesaria una vez que el sistema se convierta en una plataforma SaaS Multi-Tenant.
+The official ERD documents the **target cloud architecture**, which will be needed once the system becomes a Multi-Tenant SaaS platform.
 
-![Diagrama Entidad-Relación Completo](img/der-complete.png)
+![Complete Entity-Relationship Diagram](img/der-complete.png)
 
-**Características del esquema DER:**
-- **Motor:** Base de datos relacional robusta (ej. MySQL/PostgreSQL).
-- **Modo:** Servidor centralizado.
-- **Alcance:** Multi-tenant (Empresas -> Usuarios -> Múltiples Agentes/Equipos).
+**ERD schema characteristics:**
+- **Engine:** Robust relational database (e.g., MySQL/PostgreSQL).
+- **Mode:** Centralized server.
+- **Scope:** Multi-tenant (Companies -> Users -> Multiple Agents/Teams).
 
-### Módulos Posteriores al MVP
+### Post-MVP Modules
 
-Los siguientes módulos documentados en el DER **NO formarán parte del MVP** y se construirán en fases posteriores:
+The following modules documented in the ERD will **NOT be part of the MVP** and will be built in later phases:
 
-1. **Módulo Organizacional**: Tablas de `empresa`, `usuario`, `rol` y `usuario_rol`.
-2. **Módulo de Agentes**: Registro de clientes de captura por máquina (`agente`).
-3. **Módulo de Privacidad**: Motor de redacción y reglas de censura (`regla_privacidad`, `deteccion_sensible`).
-4. **Módulo de Reportes & Auditoría**: Históricos analíticos precalculados (`reporte`) y registro de accesos al sistema (`auditoria`).
-5. **Normalización Estricta**: Separación de `evento` base de la metadata de `captura_pantalla`, `texto_ocr` y `ventana_activa`.
+1. **Organizational Module**: `company`, `user`, `role`, and `user_role` tables.
+2. **Agents Module**: Capture client registration by machine (`agent`).
+3. **Privacy Module**: Redaction engine and censorship rules (`privacy_rule`, `sensitive_detection`).
+4. **Reports & Audit Module**: Pre-computed analytical histories (`report`) and system access logs (`audit`).
+5. **Strict Normalization**: Separation of base `event` from `screenshot`, `ocr_text`, and `active_window` metadata.
 
-## Estrategia de Migración Futura
+## Future Migration Strategy
 
-El diseño actual de `raw_events` y `sessions` incluye identificadores UUID generados localmente. En la Fase 2, un servicio de sincronización (Sync Agent) tomará estos registros locales de SQLite y los insertará en el clúster MySQL central, inyectando los UUIDs foráneos del `id_usuario` e `id_agente` que correspondan al token de autenticación del dispositivo.
+The current `raw_events` and `sessions` design includes locally generated UUID identifiers. In Phase 2, a Sync Agent service will take these local SQLite records and insert them into the central MySQL cluster, injecting the foreign UUIDs for `user_id` and `agent_id` corresponding to the device's authentication token.
