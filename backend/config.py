@@ -6,7 +6,7 @@ class Settings:
     def __init__(self):
         self.db_path: str = os.getenv(
             "INSIGHT_DB_PATH",
-            str(Path(__file__).resolve().parent.parent / "data" / "insight_monitor.db"),
+            str(Path(__file__).resolve().parent / "data" / "insight_monitor.db"),
         )
         self.cors_origins: list[str] = os.getenv(
             "INSIGHT_CORS_ORIGINS",

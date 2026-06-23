@@ -1,0 +1,67 @@
+import logging
+from datetime import datetime, timezone
+from typing import Any
+from uuid import uuid4
+
+from backend.models.intent_record import IntentRecord
+
+logger = logging.getLogger(__name__)
+
+
+class IntentParserError(Exception):
+    pass
+
+
+class IntentParser:
+    def parse(self, llm_response: dict[str, Any], session_id: str) -> IntentRecord:
+        self._validate_response(llm_response)
+
+        record = IntentRecord(
+            record_id=str(uuid4()),
+            session_id=session_id,
+            timestamp=datetime.now(timezone.utc),
+            session_type=llm_response.get("session_type", "ambiguous"),
+            goal=llm_response.get("goal", ""),
+            goal_confidence=float(llm_response.get("goal_confidence", 0.0)),
+            friction_points=llm_response.get("friction_points", []),
+            friction_confidence=self._safe_float(
+                llm_response.get("friction_confidence")
+            ),
+            category=llm_response.get("category", "ambiguous"),
+            category_confidence=float(llm_response.get("category_confidence", 0.0)),
+            tags=llm_response.get("tags", []),
+            evidence=llm_response.get("evidence", []),
+            alternatives=llm_response.get("alternatives", []),
+            app_summary=llm_response.get("app_summary", {}),
+            raw_timeline_summary=llm_response.get("raw_timeline_summary", ""),
+        )
+
+        return record
+
+    @staticmethod
+    def _validate_response(response: dict[str, Any]) -> None:
+        required = ["session_type", "goal", "goal_confidence", "evidence"]
+        missing = [f for f in required if f not in response]
+        if missing:
+            raise IntentParserError(
+                f"LLM response missing required fields: {missing}"
+            )
+
+        valid_types = {
+            "skill_development", "applied_learning",
+            "peer_collaboration", "ambiguous", "personal",
+        }
+        st = response.get("session_type")
+        if st not in valid_types:
+            raise IntentParserError(
+                f"Invalid session_type '{st}'. Must be one of: {valid_types}"
+            )
+
+    @staticmethod
+    def _safe_float(value: Any) -> float | None:
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None

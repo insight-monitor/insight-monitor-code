@@ -10,26 +10,38 @@ from backend.config import settings
 from backend.routes.health import router as health_router
 from backend.routes.events import router as events_router
 from backend.routes.sessions import router as sessions_router
+from backend.pipeline.inference_pipeline import InferencePipeline
 from backend.pipeline.session_builder import SessionBuilder, POLL_INTERVAL
 from backend.storage.database import Database
 
 logger = logging.getLogger(__name__)
 
+INFERENCE_POLL_INTERVAL = 60
+
 session_builder: SessionBuilder | None = None
+inference_pipeline: InferencePipeline | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global session_builder
+    global session_builder, inference_pipeline
     db = Database.get_instance(settings.db_path)
     session_builder = SessionBuilder(db)
     session_builder.start()
 
-    task = asyncio.create_task(_run_session_builder())
+    if settings.gemini_api_key:
+        inference_pipeline = InferencePipeline(db)
+        logger.info("Inference pipeline initialized (model=%s)", settings.gemini_model)
+    else:
+        logger.warning("GEMINI_API_KEY not set — inference pipeline disabled")
+
+    sb_task = asyncio.create_task(_run_session_builder())
+    ip_task = asyncio.create_task(_run_inference_pipeline())
 
     yield
 
-    task.cancel()
+    sb_task.cancel()
+    ip_task.cancel()
     if session_builder:
         session_builder.stop()
 
@@ -42,6 +54,16 @@ async def _run_session_builder():
         except Exception as e:
             logger.error("Session builder error: %s", e)
         await asyncio.sleep(POLL_INTERVAL)
+
+
+async def _run_inference_pipeline():
+    while True:
+        try:
+            if inference_pipeline:
+                inference_pipeline.process_closed_sessions()
+        except Exception as e:
+            logger.error("Inference pipeline error: %s", e)
+        await asyncio.sleep(INFERENCE_POLL_INTERVAL)
 
 
 app = FastAPI(

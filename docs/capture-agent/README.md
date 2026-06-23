@@ -18,4 +18,4 @@ Skeleton working, pending real Linux testing and Wayland compatibility.
 
 ## Development
 
-See `backend/backend/config.py` for configurable capture parameters. The agent reads `SESSION_INACTIVITY_GAP_MIN` (default 8 min) to determine session boundaries.
+See `backend/config.py` for configurable capture parameters. The agent reads `SESSION_INACTIVITY_GAP_MIN` (default 8 min) to determine session boundaries.
