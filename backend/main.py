@@ -29,14 +29,11 @@ async def lifespan(app: FastAPI):
     session_builder = SessionBuilder(db)
     session_builder.start()
 
-    # Inference pipeline is always initialized; it returns mock/fake intent data
-    # when GEMINI_API_KEY is not set. TODO [Day 5]: Remove fake-data fallback once
-    # a real LLM integration is in place and remove the GEMINI_API_KEY check.
-    inference_pipeline = InferencePipeline(db)
     if settings.gemini_api_key:
+        inference_pipeline = InferencePipeline(db)
         logger.info("Inference pipeline initialized (model=%s)", settings.gemini_model)
     else:
-        logger.warning("GEMINI_API_KEY not set — using mock/fake intent responses")
+        logger.warning("GEMINI_API_KEY not set — inference pipeline disabled")
 
     sb_task = asyncio.create_task(_run_session_builder())
     ip_task = asyncio.create_task(_run_inference_pipeline())

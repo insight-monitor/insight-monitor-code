@@ -154,7 +154,7 @@ def test_inference_pipeline_process_session():
     )
 
     mock_llm = MagicMock(spec=LLMService)
-    mock_llm.generate_structured.return_value = {
+    mock_response = {
         "session_type": "applied_learning",
         "goal": "Build API endpoint",
         "goal_confidence": 0.85,
@@ -168,6 +168,10 @@ def test_inference_pipeline_process_session():
         "app_summary": {},
         "raw_timeline_summary": "",
     }
+    mock_llm.generate_structured.return_value = (
+        '{"session_type": "applied_learning"}',
+        mock_response,
+    )
 
     pipeline = InferencePipeline(db, llm_service=mock_llm)
     result = pipeline.process_session("sess-123")

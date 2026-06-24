@@ -13,7 +13,12 @@ class IntentParserError(Exception):
 
 
 class IntentParser:
-    def parse(self, llm_response: dict[str, Any], session_id: str) -> IntentRecord:
+    def parse(
+        self,
+        llm_response: dict[str, Any],
+        session_id: str,
+        raw_text: str | None = None,
+    ) -> IntentRecord:
         self._validate_response(llm_response)
 
         record = IntentRecord(
@@ -22,25 +27,33 @@ class IntentParser:
             timestamp=datetime.now(timezone.utc),
             session_type=llm_response.get("session_type", "ambiguous"),
             goal=llm_response.get("goal", ""),
-            goal_confidence=float(llm_response.get("goal_confidence", 0.0)),
+            goal_confidence=self._safe_float(
+                llm_response.get("goal_confidence"), 0.0
+            ),
             friction_points=llm_response.get("friction_points", []),
             friction_confidence=self._safe_float(
                 llm_response.get("friction_confidence")
             ),
             category=llm_response.get("category", "ambiguous"),
-            category_confidence=float(llm_response.get("category_confidence", 0.0)),
+            category_confidence=self._safe_float(
+                llm_response.get("category_confidence"), 0.0
+            ),
             tags=llm_response.get("tags", []),
             evidence=llm_response.get("evidence", []),
             alternatives=llm_response.get("alternatives", []),
             app_summary=llm_response.get("app_summary", {}),
             raw_timeline_summary=llm_response.get("raw_timeline_summary", ""),
+            raw_llm_response=raw_text,
         )
 
         return record
 
     @staticmethod
     def _validate_response(response: dict[str, Any]) -> None:
-        required = ["session_type", "goal", "goal_confidence", "evidence"]
+        required = [
+            "session_type", "goal", "goal_confidence",
+            "category", "category_confidence", "evidence",
+        ]
         missing = [f for f in required if f not in response]
         if missing:
             raise IntentParserError(
@@ -57,11 +70,29 @@ class IntentParser:
                 f"Invalid session_type '{st}'. Must be one of: {valid_types}"
             )
 
+        evidence = response.get("evidence")
+        if not isinstance(evidence, list):
+            raise IntentParserError(
+                f"'evidence' must be a list, got {type(evidence).__name__}"
+            )
+
+        friction = response.get("friction_points")
+        if friction is not None and not isinstance(friction, list):
+            raise IntentParserError(
+                f"'friction_points' must be a list, got {type(friction).__name__}"
+            )
+
+        tags = response.get("tags")
+        if tags is not None and not isinstance(tags, list):
+            raise IntentParserError(
+                f"'tags' must be a list, got {type(tags).__name__}"
+            )
+
     @staticmethod
-    def _safe_float(value: Any) -> float | None:
+    def _safe_float(value: Any, default: float | None = None) -> float | None:
         if value is None:
-            return None
+            return default
         try:
             return float(value)
         except (ValueError, TypeError):
-            return None
+            return default
