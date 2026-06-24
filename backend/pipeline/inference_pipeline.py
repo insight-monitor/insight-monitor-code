@@ -48,13 +48,13 @@ class InferencePipeline:
         logger.info("Running inference for session %s (events=%d)", session_id, len(events))
 
         try:
-            raw_response = self.llm.generate_structured(prompt)
+            raw_text, raw_response = self.llm.generate_structured(prompt)
         except LLMServiceError as e:
             logger.error("LLM inference failed for session %s: %s", session_id, e)
             return None
 
         try:
-            intent = self.intent_parser.parse(raw_response, session_id)
+            intent = self.intent_parser.parse(raw_response, session_id, raw_text=raw_text)
         except IntentParserError as e:
             logger.error("Intent parsing failed for session %s: %s", session_id, e)
             return None

@@ -1,22 +1,21 @@
 import json
 
 
-
-SYSTEM_INSTRUCTION = """Eres un analista de actividad imparcial. Tu tarea es analizar sesiones de trabajo/estudio y clasificarlas en una de las siguientes categorías RIWI:
+SYSTEM_INSTRUCTION = """You are an impartial activity analyst. Your task is to analyze work/study sessions and classify them into one of the following RIWI categories:
 
 RIWI CATEGORIES:
-- skill_development: El usuario está aprendiendo una nueva habilidad técnica o teórica (tutoriales, cursos, documentación, práctica deliberada).
-- applied_learning: El usuario está aplicando conocimientos en un proyecto práctico (programación, diseño, resolución de problemas reales).
-- peer_collaboration: El usuario está colaborando con otras personas (reuniones, pair programming, code review, chat grupal).
-- ambiguous: No hay suficiente evidencia para determinar la categoría.
-- personal: Actividad personal no relacionada con trabajo/estudio.
+- skill_development: The user is learning a new technical or theoretical skill (tutorials, courses, documentation, deliberate practice).
+- applied_learning: The user is applying knowledge in a practical project (programming, design, real-world problem solving).
+- peer_collaboration: The user is collaborating with other people (meetings, pair programming, code review, group chat).
+- ambiguous: There is insufficient evidence to determine the category.
+- personal: Personal activity unrelated to work or study.
 
-REGLAS:
-1. Basa tu análisis ÚNICAMENTE en la evidencia proporcionada.
-2. Si hay poca evidencia, asigna "ambiguous" con confianza baja.
-3. No hagas suposiciones sobre intenciones sin evidencia.
-4. Las pestañas del navegador y títulos de ventana son pistas importantes.
-5. Identifica puntos de fricción cuando sea evidente (ej: cambios frecuentes de app, errores, ventanas de búsqueda)."""
+RULES:
+1. Base your analysis ONLY on the provided evidence.
+2. If there is little evidence, assign "ambiguous" with low confidence.
+3. Do not make assumptions about intentions without evidence.
+4. Browser tabs and window titles are important clues.
+5. Identify friction points when evident (e.g., frequent app switching, errors, search windows)."""
 
 
 OUTPUT_SCHEMA = {
@@ -78,9 +77,9 @@ class PromptBuilder:
 
         parts.append(
             f"## OUTPUT FORMAT\n"
-            f"Responde ÚNICAMENTE con un objeto JSON válido que siga este esquema:\n"
+            f"Respond ONLY with a valid JSON object following this schema:\n"
             f"{json.dumps(OUTPUT_SCHEMA, indent=2)}\n"
-            f"No incluyas markdown, explicaciones ni texto adicional fuera del JSON."
+            f"Do not include markdown, explanations, or any text outside the JSON."
         )
 
         return "\n".join(parts)

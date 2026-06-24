@@ -32,8 +32,8 @@ class LLMService:
         if self._client is None:
             if not self.api_key:
                 raise LLMServiceError(
-                    "GEMINI_API_KEY no está configurada. "
-                    "Configúrala en el archivo .env o en variables de entorno."
+                    "GEMINI_API_KEY is not configured. "
+                    "Set it in the .env file or environment variables."
                 )
             self._client = genai.Client(api_key=self.api_key)
         return self._client
@@ -68,10 +68,10 @@ class LLMService:
             f"LLM call failed after {self.max_retries} attempts: {last_error}"
         )
 
-    def generate_structured(self, prompt: str) -> dict[str, Any]:
+    def generate_structured(self, prompt: str) -> tuple[str, dict[str, Any]]:
         raw = self.generate(prompt)
         parsed = self._parse_json_response(raw)
-        return parsed
+        return raw, parsed
 
     @staticmethod
     def _parse_json_response(raw: str) -> dict[str, Any]:
