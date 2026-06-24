@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import sys
 BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE / "backend"))
+sys.path.insert(0, str(BASE))
 
 from backend.models.raw_event import RawEvent, EventType
 from backend.models.session_context import SessionContext

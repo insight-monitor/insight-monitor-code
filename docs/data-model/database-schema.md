@@ -9,7 +9,7 @@ version: 1.0.0
 
 # Database Schema
 
-SQLite database with WAL mode, thread-safe singleton connection. Tables created at `backend/backend/storage/database.py:_init_schema()`.
+SQLite database with WAL mode, thread-safe singleton connection. Tables created at `backend/storage/database.py:_init_schema()`.
 
 ![Diagrama Entidad-Relación Completo](img/der-complete.png)
 

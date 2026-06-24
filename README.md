@@ -166,7 +166,7 @@ Full interactive docs at `http://localhost:8002/docs`.
 Files: `capture/`. Captures screenshots (`mss`), input frequency (`pynput`), window focus + browser tabs (`xdotool` + `xprop`). Sends events to API via HTTP. Configurable via env vars. Requires Linux with X11 (not Wayland).
 
 ### Backend API (FastAPI + SQLite) — Working with all CRUD routes + session builder
-Files: `backend/backend/`. Includes background session builder (auto-close after inactivity gap), batch ingest, and manual close endpoint.
+Files: `backend/`. Includes background session builder (auto-close after inactivity gap), batch ingest, inference pipeline, and manual close endpoint.
 
 ### Inference Pipeline (Gemini API) — Models defined, pipeline pending
 Files: `backend/pipeline/` + `backend/services/`. Next: llm_service, prompt_builder, intent_parser.
