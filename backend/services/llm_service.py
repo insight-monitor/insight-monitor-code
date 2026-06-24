@@ -39,6 +39,9 @@ class LLMService:
         return self._client
 
     def generate(self, prompt: str) -> str:
+        if not self.api_key:
+            logger.warning("GEMINI_API_KEY not configured — returning fake response")
+            return self._fake_response()
         last_error: Exception | None = None
 
         for attempt in range(1, self.max_retries + 1):
@@ -67,6 +70,11 @@ class LLMService:
         raise LLMServiceError(
             f"LLM call failed after {self.max_retries} attempts: {last_error}"
         )
+
+    def _fake_response(self) -> str:
+        # TODO [Day 5]: Replace with real LLM inference once GEMINI_API_KEY is configured.
+        # This hardcoded response proves the inference pipeline works end-to-end.
+        return '{"session_type": "applied_learning", "goal": "Development session", "goal_confidence": 0.75, "evidence": ["VS Code open"], "category": "applied_learning", "category_confidence": 0.75, "friction_points": [], "friction_confidence": null, "tags": ["development"], "alternatives": [], "app_summary": {}, "raw_timeline_summary": ""}'
 
     def generate_structured(self, prompt: str) -> dict[str, Any]:
         raw = self.generate(prompt)
