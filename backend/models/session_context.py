@@ -14,3 +14,6 @@ class SessionContext(BaseModel):
     avg_keystrokes_per_min: float | None = None
     active_apps: list[str] = []
     status: str = "open"
+    session_type: str | None = None
+    goal: str | None = None
+    confidence: float | None = None

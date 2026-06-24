@@ -97,6 +97,8 @@ function App() {
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Events</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Apps</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Goal</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Confidence</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -121,6 +123,8 @@ function App() {
                       })()}
                     </td>
                     <td className="px-4 py-3 text-gray-700">{s.session_type || "—"}</td>
+                    <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate" title={s.goal || undefined}>{s.goal || "—"}</td>
+                    <td className="px-4 py-3 text-gray-700">{s.confidence != null ? `${(s.confidence * 100).toFixed(0)}%` : "—"}</td>
                   </tr>
                 ))}
               </tbody>

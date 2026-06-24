@@ -48,11 +48,20 @@ export interface SessionDetail extends Session {
 export interface IntentRecord {
   record_id: string
   session_id: string
+  timestamp: string
   session_type: string
   goal: string
   goal_confidence: number
+  friction_points: string[]
+  friction_confidence: number | null
   category: string
-  tags: string
+  category_confidence: number
+  tags: string[]
+  evidence: string[]
+  alternatives: string[]
+  app_summary: Record<string, unknown>
+  raw_timeline_summary: string
+  raw_llm_response: string | null
   created_at: string
 }
 

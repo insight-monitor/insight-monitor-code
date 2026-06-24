@@ -190,6 +190,7 @@ class IntentRepository:
         )
         if row:
             row = _parse_json_fields(row, _INTENT_JSON_FIELDS)
+            row["record_id"] = row.pop("id")
         return row
 
     def find_all(self, limit: int = 50) -> list[dict]:
@@ -197,4 +198,9 @@ class IntentRepository:
             "SELECT * FROM intent_records ORDER BY created_at DESC LIMIT ?",
             (limit,),
         )
-        return [_parse_json_fields(r, _INTENT_JSON_FIELDS) for r in rows]
+        result = []
+        for r in rows:
+            r = _parse_json_fields(r, _INTENT_JSON_FIELDS)
+            r["record_id"] = r.pop("id")
+            result.append(r)
+        return result
