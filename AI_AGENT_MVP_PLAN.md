@@ -1,7 +1,7 @@
-# AI Agent MVP Execution Plan
+# AI Agent Inference Pipeline v0.1 Execution Plan
 
 **Branch**: `chore/ai-agent-mvp-plan`
-**Target**: MVP in 3 Days (Days 7-9 of 14)
+**Target**: Inference Pipeline v0.1 in 3 Days (Days 7-9 of 14)
 **Team**: 4 Persons × 4 Parallel Agents = 16 Agent Slots
 **Context**: `.ai-context/` (source of truth for all agents)
 
@@ -38,10 +38,10 @@ DAY 7                          DAY 8                          DAY 9
 │   │              │              │                 ├→ ARCH-10 (A2)   │
 │   │              │              │                 │                │
 │   └──────────────┴──────────────┴─────────────────┘                │
-│                    INTEGRATION & MVP DEMO                           │
+│                    INTEGRATION & PIPELINE DEMO                      │
 └─────────────────────────────────────────────────────────────────────┘
 
-PARALLEL (Optional): ARCH-8 (Capture Resilience) - Post-MVP if time
+PARALLEL (Optional): ARCH-8 (Capture Resilience) - Post-v0.1 if time
 ```
 
 **Key**: ARCH-X must complete before dependents start. Agents wait for PR merge.
@@ -313,10 +313,10 @@ tmux attach -t agent-1
 | NVIDIA API limit | Low | Fallback: Ollama local (CodeLlama 7B) |
 | Integration fails Day 9 | Medium | Daily smoke tests from Day 7 |
 | TS/backend drift | Medium | ARCH-9 runs on every backend PR |
-| Time overrun | High | **Cut scope**: Defer ARCH-7,8,11 to post-MVP |
+| Time overrun | High | **Cut scope**: Defer ARCH-7,8,11 to post-v0.1 |
 | Merge conflicts | Medium | Small PRs, daily rebase, file ownership |
 
-### MVP Minimum (If Desperate)
+### Pipeline v0.1 Minimum (If Desperate)
 - ARCH-1,2,3,4,6 ONLY
 - Capture agent works (no resilience)
 - Dashboard shows sessions + intent
@@ -400,4 +400,4 @@ tmux new-session -d -s a4 'opencode --session agent-4'
 # "Read .ai-context/AGENT_INSTRUCTIONS.md. Your issue is #XX. Begin."
 ```
 
-**Good luck. Ship the MVP.**
+**Good luck. Ship the Pipeline v0.1.**

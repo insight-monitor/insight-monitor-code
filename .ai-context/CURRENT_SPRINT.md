@@ -1,10 +1,11 @@
-# Current Sprint: 3-Day MVP (Days 7-9 of 14)
+# Current Sprint: 3-Day Inference Pipeline v0.1 (Days 7-9 of 14)
 
 ## Sprint Goal
-Deliver working MVP with Clean Architecture foundation:
+Deliver working Inference Pipeline v0.1 with Clean Architecture foundation:
 - Capture Agent → API → Session Building → Intent Inference → Dashboard
 - All code testable, documented, no singleton anti-patterns
 - TypeScript types generated from backend
+- **Scope**: Inference engine only — challengeability, transparency, individual benefit deferred to post-v0.1
 
 ## Day 7 (Foundation) - Target: 2026-06-25
 | Issue | Owner | Status | Branch |
@@ -38,26 +39,26 @@ Deliver working MVP with Clean Architecture foundation:
 - [ ] TypeScript types generated and committed
 - [ ] Integration smoke test passes
 
-## Day 9 (Hardening + MVP) - Target: 2026-06-27
+## Day 9 (Hardening + Pipeline v0.1) - Target: 2026-06-27
 | Issue | Owner | Status | Branch |
 |-------|-------|--------|--------|
 | ARCH-7: Transactions | Person A - Agent 1 | ⏳ Pending | `refactor/transaction-boundaries` |
 | ARCH-10: Docs Update | Person A - Agent 2 | ⏳ Pending | `docs/update-architecture-docs` |
 | ARCH-11: Unit Tests | Person D - Agent 2 | ⏳ Pending | `refactor/unit-tests-with-mocks` |
-| MVP Integration | All | ⏳ Pending | - |
+| Pipeline Integration | All | ⏳ Pending | - |
 
 **Day 9 Definition of Done**:
 - [ ] Use cases use `db.transaction()` for atomicity
 - [ ] Architecture docs reflect reality (`current-state.md`, ADRs)
 - [ ] Unit tests >90% domain, >80% use cases
 - [ ] E2E: Capture agent → Dashboard shows session with intent
-- [ ] Tag `mvp-architecture-complete`
+- [ ] Tag `inference-pipeline-v0.1-complete`
 
-## Parallel / Post-MVP (Optional if time)
+## Parallel / Post-v0.1 (Optional if time)
 | Issue | Priority | Owner |
 |-------|----------|-------|
-| ARCH-8: Capture Agent Resilience | Low (Post-MVP) | - |
-| Frontend Polish | Low (Post-MVP) | - |
+| ARCH-8: Capture Agent Resilience | Low (Post-v0.1) | - |
+| Frontend Polish | Low (Post-v0.1) | - |
 
 ## Blocker Tracking
 | Blocker | Issue | Owner | Resolution Target |
