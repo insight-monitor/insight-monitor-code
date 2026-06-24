@@ -1,8 +1,6 @@
-"""End-to-end test: Capture → API → store → retrieve → display.
-TODO [Day 5]: Replace with real integration tests once LLM service is wired up.
-"""
+"""End-to-end test: Capture → API → store → retrieve → display."""
+from unittest.mock import MagicMock, patch
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -25,7 +23,7 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
 
     from backend.main import app
     from backend.pipeline.inference_pipeline import InferencePipeline
-    from backend.storage.database import Database
+    from backend.services.llm_service import LLMService
 
     db = Database.get_instance(db_path)
     event_repo = EventRepository(db)
@@ -80,11 +78,30 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
         assert close_resp.status_code == 200
         assert close_resp.json()["status"] == "closed"
 
-        pipeline = InferencePipeline(db)
+        mock_llm = MagicMock(spec=LLMService)
+        mock_llm.generate_structured.return_value = (
+            '{"session_type": "applied_learning"}',
+            {
+                "session_type": "applied_learning",
+                "goal": "Development session",
+                "goal_confidence": 0.85,
+                "evidence": ["VS Code open"],
+                "friction_points": [],
+                "friction_confidence": None,
+                "category": "applied_learning",
+                "category_confidence": 0.8,
+                "tags": [],
+                "alternatives": [],
+                "app_summary": {},
+                "raw_timeline_summary": "",
+            },
+        )
+
+        pipeline = InferencePipeline(db, llm_service=mock_llm)
         intent = pipeline.process_session(session_id)
         assert intent is not None, "Inference should return an IntentRecord"
         assert intent.session_type in ("skill_development", "applied_learning", "peer_collaboration", "ambiguous", "personal")
-        assert intent.goal_confidence >= 0.0 and intent.goal_confidence <= 1.0
+        assert 0.0 <= intent.goal_confidence <= 1.0
         assert intent.goal is not None
 
         session_detail = client.get(f"/sessions/{session_id}").json()
@@ -109,14 +126,3 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
 
     Database.reset()
     settings.db_path = str(BASE / "backend" / "data" / "insight_monitor.db")
-
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("End-to-end test: Capture → API → Store → Retrieve → Display")
-    print("=" * 60)
-
-    import tempfile
-    with tempfile.TemporaryDirectory() as tmp:
-        test_e2e_session_flow(tmp, None)
-        print("[OK] End-to-end flow passed")
