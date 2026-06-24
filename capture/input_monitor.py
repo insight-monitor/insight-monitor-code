@@ -41,8 +41,8 @@ class InputMonitor:
             self._mouse_listener.start()
             self._keyboard_listener.start()
 
-            self._mouse_listener.join()
-            self._keyboard_listener.join()
+            while self._running:
+                time.sleep(0.5)
         except Exception as e:
             logger.error("Input monitor error: %s", e)
 
