@@ -44,8 +44,8 @@ Days: [1][2][3][4] [5] [6] [7] [8─14]
 - Frontend session list table (status, duration, events, apps)
 
 ### Day 5-14 — Jun 19-29 🔜
-- Inference pipeline (LLM service, prompt builder, intent parser)
 - Dashboard detail views, confidence badges, timeline
+- Inference pipeline (LLM service, prompt builder, intent parser) 🔄 implemented
 - Unit/integration tests, BPO/Riwi demo scenarios
 - Final dry run + stakeholder presentation
 
@@ -102,11 +102,13 @@ npm run simulate    # Sends simulated Riwi/BPO events to the API
 │
 ├── backend/              Layer 2 — Backend API (Clean Architecture)
 │   ├── application/      Use Cases (IngestEvent, BuildSessions, InferIntent, GetSession)
-│   ├── domain/           Entities (RawEvent, IntentRecord) and Ports (Repository interfaces)
+│   ├── domain/           Entities (RawEvent, IntentRecord, SessionContext) and Ports (Repository interfaces)
 │   ├── infrastructure/   SQLite/InMemory repos, DI Composition Root (di.py), Unit of Work
 │   ├── routes/           FastAPI routers (health, events, sessions) using DI
-│   ├── pipeline/         Pending: prompt builder, intent parser
-│   ├── services/         Pending: LLM service (Gemini API client)
+│   ├── pipeline/         Legacy: session builder, inference pipeline, prompt builder, intent parser
+│   ├── services/         LLM service (Gemini API client)
+│   ├── tests/            Unit tests (InMemory repos) and integration tests
+│   ├── config.py         Centralized settings (pydantic-settings)
 │   ├── main.py           FastAPI app entry point
 │   ├── pyproject.toml
 │   └── data/             SQLite database (gitignored)
@@ -164,11 +166,11 @@ Full interactive docs at `http://localhost:8002/docs`.
 ### Capture Agent (Python) — Working (requires X11)
 Files: `capture/`. Captures screenshots (`mss`), input frequency (`pynput`), window focus + browser tabs (`xdotool` + `xprop`). Sends events to API via HTTP. Configurable via env vars. Requires Linux with X11 (not Wayland).
 
-### Backend API (FastAPI + SQLite) — Working with all CRUD routes + session builder
-Files: `backend/`. Includes background session builder (auto-close after inactivity gap), batch ingest, inference pipeline, and manual close endpoint.
+### Backend API (FastAPI + SQLite + Clean Architecture) — Working with all CRUD routes + session builder
+Files: `backend/`. Includes Clean Architecture layers (Domain, Application, Infrastructure), DI composition root, unit of work for transaction boundaries, background session builder, batch ingest, inference pipeline (LLM service, prompt builder, intent parser), and manual close endpoint.
 
-### Inference Pipeline (Gemini API) — Models defined, pipeline pending
-Files: `backend/pipeline/` + `backend/services/`. Next: llm_service, prompt_builder, intent_parser.
+### Inference Pipeline (Gemini API) — Implemented
+Files: `backend/pipeline/` + `backend/services/`. Includes `LLMService` (Gemini API client), `PromptBuilder` (system prompt assembly), `IntentParser` (LLM JSON response parsing), and `InferIntentUseCase` orchestrating all three.
 
 ### Frontend (React + TypeScript + Tailwind) — Live health indicator + session list
 Files: `dashboard/`. Shows live backend status, session table (status, duration, events, apps). Next: detail view, confidence badges, timeline.
@@ -196,6 +198,8 @@ Architecture, data model, inference framework, API reference, setup guide, and b
 | Document | Location |
 |---|---|
 | Architecture | `docs/architecture/README.md` |
+| Current state | `docs/architecture/current-state.md` |
+| ADR (decisions) | `docs/architecture/adr/` |
 | Scaling path | `docs/architecture/scaling-path.md` |
 | Error philosophy | `docs/architecture/error-philosophy.md` |
 | Data acquisition | `docs/data-model/acquisition.md` |

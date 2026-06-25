@@ -96,10 +96,11 @@ insight-monitor/
 │   │   ├── db/                 # SQLite and InMemory implementations
 │   │   └── di.py               # Dependency Injection Composition Root
 │   ├── routes/                 # Presentation Layer
-│   │   ├── events.py           # POST/GET /events
-│   │   └── sessions.py         # GET /sessions, /sessions/{id}
-│   ├── pipeline/               # Pending: prompt builder, intent parser
-│   ├── services/               # Pending: LLM service (Gemini API client)
+│   │   ├── events.py           # POST/GET /events, /events/batch, /events/session/{id}
+│   │   ├── sessions.py         # GET /sessions, /sessions/{id}, /sessions/{id}/intent, POST /sessions/{id}/close
+│   │   └── health.py           # GET /health
+│   ├── pipeline/               # Legacy: session builder, inference pipeline, prompt builder, intent parser
+│   ├── services/               # LLM service (Gemini API client)
 │   ├── main.py                 # FastAPI app entry point
 │   ├── pyproject.toml
 │   ├── poetry.lock
@@ -125,6 +126,15 @@ insight-monitor/
 ├── package.json
 └── README.md
 ```
+
+## Architecture Documentation
+
+| Document | Description |
+|---|---|
+| `current-state.md` | Honest assessment of the current architecture after ARCH-0 restructuring |
+| `adr/` | Architecture Decision Records — historical record of key decisions |
+| `scaling-path.md` | Post-MVP roadmap and architecture decisions that survive scaling |
+| `error-philosophy.md` | Error handling principles and classification philosophy |
 
 ## Port Reference
 

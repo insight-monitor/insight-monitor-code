@@ -9,19 +9,31 @@ poetry run pytest -v
 
 The `-v` flag prints every individual test function and its result.
 
+### Test markers
+
+The project uses pytest custom markers:
+
+```bash
+# Unit tests only — uses InMemory repos, no disk I/O, no network (< 2s)
+poetry run pytest -m unit -v
+
+# Integration tests only — uses real SQLite on disk
+poetry run pytest -m integration -v
+
+# All tests
+poetry run pytest -v
+```
+
 ## Test Structure
 
 All tests live in `backend/tests/`:
 
-| File | Tests | What it covers |
-|------|-------|----------------|
-| `test_health.py` | 1 | `GET /health` endpoint |
-| `test_models.py` | 10 | Pydantic model validation (RawEvent, IntentRecord) |
-| `test_events.py` | 13 | `POST/GET /events`, `/events/batch`, `/events/session/{id}` |
-| `test_sessions.py` | 10 | `GET /sessions`, `GET /sessions/{id}`, close, intent |
-| `test_repositories.py` | 17 | Database CRUD, JSON field parsing, edge cases |
+| File | Tests | Marker | What it covers |
+|------|-------|--------|----------------|
+| `test_health.py` | 1 | integration | `GET /health` endpoint |
+| `test_unit_use_cases.py` | 10 | unit | IngestEvent, BuildSessions, GetSession use cases (InMemory repos) |
 
-**Total: 62 tests.**
+**Total: 11 tests.** (Legacy tests `test_models.py`, `test_events.py`, `test_sessions.py`, `test_repositories.py` were replaced by `test_unit_use_cases.py` during the ARCH-0 Clean Architecture migration.)
 
 ## Naming Convention
 
@@ -60,11 +72,12 @@ FAILED test_should_return_404_when_session_does_not_exist
 
 ## Writing Tests
 
-### API tests
+### API tests (integration)
 
-Test the full request-response cycle through FastAPI's `TestClient`:
+Test the full request-response cycle through FastAPI's `TestClient` with DI overrides (InMemory repositories):
 
 ```python
+@pytest.mark.integration
 def test_should_return_200_when_creating_valid_event(self, client):
     response = client.post("/events", json={
         "event_id": str(uuid4()),
@@ -76,27 +89,23 @@ def test_should_return_200_when_creating_valid_event(self, client):
     assert response.json() == {"status": "ok", "event_id": ...}
 ```
 
-### Repository tests
+### Use case tests (unit)
 
-Test database logic directly through the repository class:
-
-```python
-def test_should_insert_event_and_retrieve_by_find_recent(self, event_repo):
-    event_id = str(uuid4())
-    event_repo.insert({"event_id": event_id, ...})
-    events = event_repo.find_recent()
-    assert len(events) == 1
-    assert events[0]["event_id"] == event_id
-```
-
-### Model tests
-
-Test Pydantic validation with `pytest.raises`:
+Test use cases directly with InMemory repository fixtures — zero disk, zero network:
 
 ```python
-def test_should_reject_invalid_event_type(self):
-    with pytest.raises(ValidationError, match="event_type"):
-        RawEvent(event_id="...", event_type="invalid", ...)
+@pytest.mark.unit
+def test_should_insert_event_and_return_event_id(self, event_repo):
+    raw = RawEvent(
+        event_id="ev-test-01",
+        event_type=EventType.WINDOW_FOCUS,
+        timestamp=datetime.now(timezone.utc),
+        source="capture-agent",
+    )
+    use_case = IngestEventUseCase(event_repo)
+    result = use_case.execute(raw)
+    assert result == "ev-test-01"
+    assert len(event_repo.find_recent()) == 1
 ```
 
 ### Docstrings
@@ -143,5 +152,6 @@ Check results at: `https://github.com/insight-monitor/insight-monitor-code/actio
 2. Name it `test_should_<behavior>_when_<condition>`
 3. Add a class docstring describing the endpoint/module
 4. Add a function docstring describing the specific case
-5. Run `poetry run pytest -v` to verify it passes
-6. Run `poetry run ruff check .` to verify lint passes
+5. Add the appropriate marker: `@pytest.mark.unit` (no disk/network, uses InMemory repos) or `@pytest.mark.integration` (uses SQLite or real IO)
+6. Run `poetry run pytest -v` to verify it passes
+7. Run `poetry run ruff check .` to verify lint passes
