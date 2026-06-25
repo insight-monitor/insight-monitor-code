@@ -28,7 +28,7 @@ DB_PATH = Path("./data/insight_monitor.db")
 def seed():
     Path("./data").mkdir(exist_ok=True)
 
-    db = Database(str(DB_PATH))
+    db = Database.get_instance(str(DB_PATH))
     session_repo = SessionRepository(db)
     intent_repo = IntentRepository(db)
 

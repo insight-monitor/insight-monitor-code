@@ -114,12 +114,14 @@ class SessionBuilder:
         )
         end_time = event["timestamp"]
 
-        app_sequence = json.loads(session.get("app_sequence", "[]"))
+        app_seq_raw = session.get("app_sequence", "[]")
+        app_sequence = json.loads(app_seq_raw) if isinstance(app_seq_raw, str) else (app_seq_raw or [])
         process = event.get("process_name")
         if process and (not app_sequence or app_sequence[-1] != process):
             app_sequence.append(process)
 
-        active_apps = json.loads(session.get("active_apps", "[]"))
+        active_apps_raw = session.get("active_apps", "[]")
+        active_apps = json.loads(active_apps_raw) if isinstance(active_apps_raw, str) else (active_apps_raw or [])
         if process and process not in active_apps:
             active_apps.append(process)
 
@@ -131,14 +133,20 @@ class SessionBuilder:
         except (ValueError, TypeError):
             pass
 
-        self.session_repo.update(session["id"], {
+        updates = {
             "end_time": end_time,
             "duration_seconds": duration,
             "app_sequence": app_sequence,
             "event_count": event_count,
             "screenshot_count": screenshot_count,
             "active_apps": active_apps,
-        })
+        }
+
+        if event.get("event_type") == "session_boundary" and event.get("session_boundary_type") == "close":
+            updates["status"] = "closed"
+            logger.info("Session %s closed by boundary event", session["id"])
+
+        self.session_repo.update(session["id"], updates)
 
     def _check_close(self, session: dict):
         if not session.get("end_time"):
@@ -174,12 +182,15 @@ class SessionBuilder:
     @staticmethod
     def _parse_timestamp(ts: str) -> datetime:
         try:
-            return datetime.fromisoformat(ts)
+            dt = datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except (ValueError, TypeError):
             return datetime.now(timezone.utc)
 
 
 def run_session_builder_once():
-    db = Database()
+    db = Database.get_instance()
     builder = SessionBuilder(db)
     builder.process_pending_events()

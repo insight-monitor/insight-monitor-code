@@ -72,6 +72,29 @@ def simulate_bpo_agent():
     return events
 
 
+def simulate_mixed():
+    """Simulate a mixed work + personal session."""
+    events = [
+        make_event("window_focus", window_title="Visual Studio Code", process_name="code",
+                   pid=3234),
+        make_event("window_focus", window_title="GitHub - PR #234", process_name="chrome",
+                   pid=3235, url="https://github.com/user/repo/pull/234"),
+        make_event("input_activity", clicks_per_min=5.0, keystrokes_per_min=40.0),
+        make_event("window_focus", window_title="Slack - #dev-team", process_name="slack",
+                   pid=3237),
+        make_event("window_focus", window_title="YouTube - Music for coding", process_name="chrome",
+                   pid=3235, url="https://youtube.com/watch?v=music"),
+        make_event("window_focus", window_title="LinkedIn - Feed", process_name="chrome",
+                   pid=3235, url="https://linkedin.com/feed"),
+        make_event("screenshot", screenshot_path="simulated_mixed_session.png"),
+        make_event("window_focus", window_title="Netflix - Series", process_name="chrome",
+                   pid=3235, url="https://netflix.com/watch/series"),
+        make_event("input_activity", clicks_per_min=2.0, keystrokes_per_min=5.0),
+        make_event("session_boundary", session_boundary_type="close"),
+    ]
+    return events
+
+
 def send_events(events: list[dict[str, Any]]):
     with httpx.Client(timeout=10) as client:
         for event in events:
@@ -89,5 +112,8 @@ if __name__ == "__main__":
 
     print("\nSimulating BPO Agent session...")
     send_events(simulate_bpo_agent())
+
+    print("\nSimulating Mixed Work + Personal session...")
+    send_events(simulate_mixed())
 
     print("\nDone. Check the dashboard.")
