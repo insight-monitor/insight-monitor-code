@@ -5,7 +5,7 @@ from backend.infrastructure.db.sqlite.database import Database
 from backend.infrastructure.db.sqlite.repositories import EventRepository
 
 router = APIRouter(prefix="/events", tags=["events"])
-event_repo = EventRepository(Database.get_instance())
+event_repo = EventRepository(Database())
 
 
 @router.post("")

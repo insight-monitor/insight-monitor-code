@@ -191,6 +191,6 @@ class SessionBuilder:
 
 
 def run_session_builder_once():
-    db = Database.get_instance()
+    db = Database()
     builder = SessionBuilder(db)
     builder.process_pending_events()

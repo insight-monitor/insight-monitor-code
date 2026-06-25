@@ -171,7 +171,7 @@ def wait_for_session_closed(session_id: str, timeout: int = 15) -> bool:
 def run_inference(session_id: str) -> IntentRecord | None:
     """Run the inference pipeline on a session."""
     print(f"  Running inference on session {session_id}...")
-    db = Database.get_instance()
+    db = Database()
     pipeline = InferencePipeline(db)
     intent = pipeline.process_session(session_id)
     return intent
@@ -203,9 +203,11 @@ def main():
     print(f"[INFO] Provider: {settings.llm_provider}, Model: {settings.llm_model}")
     print(f"[INFO] API URL: {API_URL}")
 
-    # Initialize DB
-    Database.reset()
-    db = Database.get_instance()
+    # Initialize DB - clear existing data
+    db = Database()
+    for table in ("intent_records", "sessions", "raw_events"):
+        db.execute(f"DELETE FROM {table}")
+    db.commit()
 
     results = {}
 

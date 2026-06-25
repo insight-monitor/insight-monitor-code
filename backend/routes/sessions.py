@@ -8,9 +8,9 @@ from backend.infrastructure.db.sqlite.repositories import (
 )
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
-session_repo = SessionRepository(Database.get_instance())
-event_repo = EventRepository(Database.get_instance())
-intent_repo = IntentRepository(Database.get_instance())
+session_repo = SessionRepository(Database())
+event_repo = EventRepository(Database())
+intent_repo = IntentRepository(Database())
 
 
 @router.get("")
