@@ -31,9 +31,9 @@ The three layers (Capture, API, Dashboard) communicate over HTTP. This means:
 
 ### 3. Pydantic models as the schema contract
 
-All data structures (`RawEvent`, `SessionContext`, `IntentRecord`) are defined as Pydantic entities in `domain/entities/`. The TypeScript types in the frontend mirror them manually (ARCH-9 pending). When the schema evolves:
-- Add a field to Pydantic → auto-generated OpenAPI spec → regenerate TypeScript types
-- Manual synchronization between Python and TypeScript is still required until ARCH-9 is implemented
+All data structures (`RawEvent`, `SessionContext`, `IntentRecord`) are defined as Pydantic entities in `domain/entities/`. TypeScript types are auto-generated from Pydantic via `scripts/generate_types.py` (ARCH-9). When the schema evolves:
+- Add a field to Pydantic → run `npm run generate:types` → regenerated TypeScript types
+- No manual synchronization between Python and TypeScript
 
 ### 4. Configuration-driven capture
 
@@ -60,7 +60,6 @@ The inference prompt is built programmatically by `PromptBuilder`, not a standal
 
 | Feature | Why |
 |---|---|
-| ARCH-9: TypeScript type generation from Pydantic | Eliminate manual TypeScript sync; reduce frontend bugs |
 | Browser extension for full URLs | More accurate URL context than tab titles |
 | Multi-tenant isolation | Need to serve > 1 customer |
 | WebSocket-based real-time updates | Better dashboard experience |
@@ -96,6 +95,5 @@ The Clean Architecture migration (ARCH-0) addressed several anti-patterns. What 
 | HTTP polling | WebSocket | Real-time dashboard adopted by supervisors |
 | Single process FastAPI | Docker Compose + multiple services | Need to scale API, inference, and storage independently |
 | CLI agent startup | Systemd service / Windows service | Agent must survive reboots and user logouts |
-| Manual TypeScript sync (ARCH-9) | Auto-generation from Pydantic | Immediately (next sprint) |
 | Pipeline modules (`pipeline/`) | Full migration to use case classes | As each pipeline function is absorbed by a use case |
 | Synchronous inference (ADR-0003) | Celery/Redis for async queue | When inference volume exceeds sync capacity |
