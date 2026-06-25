@@ -58,7 +58,8 @@ The backend has been fully migrated from a prototype-grade structure to a **Clea
 | **ARCH-6** | DI Composition Root | `infrastructure/di.py` |
 | **ARCH-7** | Transaction Boundaries (Unit of Work) | `infrastructure/db/sqlite/unit_of_work.py` |
 | **ARCH-8** | Capture Agent Resilience | `capture/event_sender.py` (buffer + retry) |
-| **ARCH-10** | Architecture Docs updated | This document |
+| **ARCH-9** | TypeScript Types from Pydantic | `scripts/generate_types.py` (run `npm run generate:types`) |
+| **ARCH-10** | Architecture Docs updated | This document + `docs/architecture/` |
 | **ARCH-11** | Unit Tests with Mocks | `tests/test_unit_use_cases.py` |
 
 ---
