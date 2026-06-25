@@ -1,6 +1,6 @@
 """
 ARCH-4: Use Case — GetSession
-Recupera el detalle completo de una sesión (datos + eventos + intento).
+Retrieves the full detail of a session (data + events + intent).
 """
 
 import logging
@@ -24,7 +24,7 @@ class GetSessionUseCase:
 
     def execute(self, session_id: str) -> Optional[dict]:
         """
-        Retorna la sesión enriquecida con eventos e intento, o None si no existe.
+        Returns the session enriched with events and intent, or None if not found.
         """
         session = self.session_repo.find_by_id(session_id)
         if not session:
@@ -40,11 +40,11 @@ class GetSessionUseCase:
         return result
 
     def list_all(self, status: Optional[str] = None, limit: int = 50) -> list[dict]:
-        """Lista sesiones, opcionalmente filtradas por estado."""
+        """Lists sessions, optionally filtered by status."""
         return self.session_repo.find_all(status=status, limit=limit)
 
     def close(self, session_id: str) -> bool:
-        """Cierra una sesión. Retorna False si no existe."""
+        """Closes a session. Returns False if not found."""
         session = self.session_repo.find_by_id(session_id)
         if not session:
             return False

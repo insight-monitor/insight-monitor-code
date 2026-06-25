@@ -1,7 +1,7 @@
 """
 ARCH-4: Use Case — BuildSessions
-Orquesta la lógica de agrupar eventos sin asignar en sesiones de trabajo.
-Solo conoce los puertos (IEventRepository, ISessionRepository); nunca SQLite directamente.
+Orchestrates the logic of grouping unassigned events into work sessions.
+Only depends on ports (IEventRepository, ISessionRepository); never SQLite directly.
 """
 
 import logging
@@ -23,8 +23,8 @@ class BuildSessionsUseCase:
 
     def execute(self) -> int:
         """
-        Procesa todos los eventos sin asignar y los agrupa en sesiones.
-        Retorna el número de sesiones creadas o actualizadas.
+        Processes all unassigned events and groups them into sessions.
+        Returns the number of sessions created or updated.
         """
         unassigned = self.event_repo.find_unassigned()
         if not unassigned:
@@ -47,14 +47,14 @@ class BuildSessionsUseCase:
                     open_sessions.append(new_session)
                 sessions_touched += 1
 
-        # Revisar cuales sesiones deben cerrarse por inactividad
+        # Check which sessions should be closed due to inactivity
         for session in open_sessions:
             self._close_if_inactive(session)
 
         return sessions_touched
 
     def close_session(self, session_id: str) -> bool:
-        """Cierra una sesión manualmente. Retorna True si se cerró, False si no existía."""
+        """Manually closes a session. Returns True if closed, False if not found."""
         session = self.session_repo.find_by_id(session_id)
         if not session:
             return False
@@ -64,7 +64,7 @@ class BuildSessionsUseCase:
         logger.info("Session %s explicitly closed", session_id)
         return True
 
-    # ─────────────────────────── helpers privados ───────────────────────────
+    # ─────────────────────────── private helpers ───────────────────────────
 
     def _find_session_for_event(self, event: dict, open_sessions: list[dict]) -> dict | None:
         event_ts = self._parse_ts(event["timestamp"])
@@ -100,7 +100,7 @@ class BuildSessionsUseCase:
         return session_id
 
     def _assign_event_to_session(self, event: dict, session: dict):
-        """Delega la asignación al repositorio de eventos."""
+        """Delegates assignment to the event repository."""
         self.event_repo.assign_to_session(event["event_id"], session["id"])
 
     def _update_session_stats(self, session: dict, event: dict):
@@ -138,7 +138,7 @@ class BuildSessionsUseCase:
             "screenshot_count": screenshot_count,
             "active_apps": active_apps,
         })
-        # Actualizamos el dict en memoria para que el ciclo del for sea coherente
+        # Update in-memory dict so the loop iteration stays coherent
         session.update({"end_time": end_time, "event_count": event_count})
 
     def _close_if_inactive(self, session: dict):

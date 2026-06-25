@@ -1,7 +1,7 @@
 """
 ARCH-7: Unit of Work (Transaction Boundaries)
-Garantiza que todas las operaciones de un Use Case se ejecuten dentro
-de una sola transacción atómica: si algo falla → rollback automático.
+Ensures all operations within a Use Case execute inside a single
+atomic transaction: if anything fails → automatic rollback.
 """
 
 from contextlib import contextmanager
@@ -17,14 +17,14 @@ from backend.infrastructure.db.sqlite.repositories import (
 
 class UnitOfWork:
     """
-    Agrupa repos bajo una sola transacción de SQLite.
+    Groups repos under a single SQLite transaction.
 
-    Uso en un Use Case:
+    Usage in a Use Case:
         with UnitOfWork(db) as uow:
             uow.events.insert(event)
             uow.sessions.create(session)
-            uow.commit()        # commit explícito al final
-        # Si se lanza cualquier excepción → rollback automático
+            uow.commit()        # explicit commit at the end
+        # If any exception is raised → automatic rollback
     """
 
     def __init__(self, db: Database):
@@ -34,35 +34,35 @@ class UnitOfWork:
         self.intents = IntentRepository(db)
 
     def __enter__(self) -> "UnitOfWork":
-        # Desactivamos los auto-commits individuales durante la transacción
+        # Disable individual auto-commits during the transaction
         self._db.execute("BEGIN")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
-            # Cualquier excepción → rollback total
+            # Any exception → full rollback
             try:
                 self._db._get_connection().rollback()
             except Exception:
                 pass
-            return False  # re-raise la excepción original
+            return False  # re-raise the original exception
         return False
 
     def commit(self):
-        """Confirma todos los cambios de la transacción actual."""
+        """Commits all changes in the current transaction."""
         self._db.commit()
 
     def rollback(self):
-        """Deshace todos los cambios de la transacción actual."""
+        """Rolls back all changes in the current transaction."""
         self._db._get_connection().rollback()
 
 
 @contextmanager
 def transaction(db: Database) -> Generator[UnitOfWork, None, None]:
     """
-    Alternativa funcional al context manager de clase.
+    Functional alternative to the class-based context manager.
 
-    Uso:
+    Usage:
         with transaction(db) as uow:
             uow.events.insert(...)
             uow.sessions.create(...)

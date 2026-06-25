@@ -1,7 +1,7 @@
 """
 ARCH-6: Composition Root — Dependency Injection
-Único lugar donde se instancian repos concretos y use cases.
-Los routers y la app solo importan de aquí; nunca tocan SQLite directamente.
+Single location where concrete repos and use cases are instantiated.
+Routers and the app only import from here; they never touch SQLite directly.
 """
 
 from functools import lru_cache
@@ -20,15 +20,15 @@ from backend.application.use_cases.infer_intent import InferIntentUseCase
 from backend.application.use_cases.get_session import GetSessionUseCase
 
 
-# ── Base de datos ─────────────────────────────────────────────────────────────
+# ── Database ──────────────────────────────────────────────────────────────────
 
 @lru_cache(maxsize=1)
 def get_db() -> Database:
-    """Instancia única (no singleton global) de la DB, compartida por toda la app."""
+    """Single (non-singleton-global) instance of Database, shared across the app."""
     return Database(settings.db_path)
 
 
-# ── Repositorios (Puertos → Infraestructura SQLite) ───────────────────────────
+# ── Repositories (Ports → SQLite Infrastructure) ─────────────────────────────
 
 def get_event_repository() -> IEventRepository:
     return EventRepository(get_db())
@@ -42,7 +42,7 @@ def get_intent_repository() -> IIntentRepository:
     return IntentRepository(get_db())
 
 
-# ── Casos de Uso (Application Layer) ─────────────────────────────────────────
+# ── Use Cases (Application Layer) ────────────────────────────────────────────
 
 def get_ingest_event_use_case() -> IngestEventUseCase:
     return IngestEventUseCase(get_event_repository())
@@ -62,8 +62,8 @@ def get_get_session_use_case() -> GetSessionUseCase:
 
 def get_infer_intent_use_case() -> InferIntentUseCase:
     """
-    Construye el InferIntentUseCase inyectando los servicios de LLM.
-    Solo se instancia si la API key está disponible.
+    Builds the InferIntentUseCase injecting LLM services.
+    Only instantiated when the API key is available.
     """
     from backend.services.llm_service import LLMService
     from backend.pipeline.prompt_builder import PromptBuilder

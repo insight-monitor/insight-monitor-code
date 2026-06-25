@@ -1,7 +1,7 @@
 """
-ARCH-5: Repositorios InMemory
-Implementaciones en memoria de los puertos de repositorio.
-Usados exclusivamente en tests unitarios — sin SQLite, sin disco, <0.1s por test.
+ARCH-5: InMemory Repositories
+In-memory implementations of the repository ports.
+Used exclusively in unit tests — no SQLite, no disk, <0.1s per test.
 """
 
 import copy

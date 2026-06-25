@@ -1,14 +1,14 @@
 """
-ARCH-11: Tests unitarios con mocks (InMemory repos)
-Verifica los Use Cases en completo aislamiento — sin SQLite, sin red.
-Estos tests deben correr en < 2 segundos en total.
+ARCH-11: Unit tests with mocks (InMemory repos)
+Verifies Use Cases in complete isolation — no SQLite, no network.
+These tests should run in < 2 seconds total.
 """
 
-# Todos los tests de este módulo se ejecutan con: pytest -m unit
-pytestmark = __import__("pytest").mark.unit
-
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+# All tests in this module run with: pytest -m unit
+pytestmark = pytest.mark.unit
 
 from backend.infrastructure.db.in_memory.repositories import (
     InMemoryEventRepository,
@@ -18,6 +18,7 @@ from backend.infrastructure.db.in_memory.repositories import (
 from backend.application.use_cases.ingest_event import IngestEventUseCase
 from backend.application.use_cases.build_sessions import BuildSessionsUseCase
 from backend.application.use_cases.get_session import GetSessionUseCase
+from backend.domain.entities.raw_event import RawEvent, EventType
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -48,12 +49,10 @@ def _make_event(event_id="ev-001", process="firefox", session_id=None):
 # Tests: IngestEventUseCase
 # ─────────────────────────────────────────────────────────────────────────────
 
-@__import__("pytest").mark.unit
+@pytest.mark.unit
 class TestIngestEventUseCase:
     def test_insert_single_event_returns_event_id(self, event_repo):
         # Arrange
-        from backend.domain.entities.raw_event import RawEvent, EventType
-        from datetime import datetime, timezone
         raw = RawEvent(
             event_id="ev-test-01",
             event_type=EventType.focus,
@@ -72,8 +71,6 @@ class TestIngestEventUseCase:
         assert len(event_repo.find_recent()) == 1
 
     def test_insert_batch_returns_count(self, event_repo):
-        from backend.domain.entities.raw_event import RawEvent, EventType
-        from datetime import datetime, timezone
         events = [
             RawEvent(
                 event_id=f"ev-batch-{i}",
@@ -89,8 +86,6 @@ class TestIngestEventUseCase:
         assert len(event_repo.find_recent()) == 5
 
     def test_duplicate_event_not_inserted_twice(self, event_repo):
-        from backend.domain.entities.raw_event import RawEvent, EventType
-        from datetime import datetime, timezone
         raw = RawEvent(
             event_id="ev-dup",
             event_type=EventType.focus,
@@ -99,7 +94,7 @@ class TestIngestEventUseCase:
         )
         use_case = IngestEventUseCase(event_repo)
         use_case.execute(raw)
-        use_case.execute(raw)  # duplicado
+        use_case.execute(raw)  # duplicate
         assert len(event_repo.find_recent()) == 1
 
 
@@ -107,7 +102,7 @@ class TestIngestEventUseCase:
 # Tests: BuildSessionsUseCase
 # ─────────────────────────────────────────────────────────────────────────────
 
-@__import__("pytest").mark.unit
+@pytest.mark.unit
 class TestBuildSessionsUseCase:
     def test_no_events_returns_zero(self, event_repo, session_repo):
         use_case = BuildSessionsUseCase(event_repo, session_repo)
@@ -125,8 +120,7 @@ class TestBuildSessionsUseCase:
         assert sessions[0]["status"] == "open"
 
     def test_event_assigned_to_existing_session(self, event_repo, session_repo):
-        # Crea una sesión abierta manualmente
-        from datetime import timedelta
+        # Create an open session manually
         now = datetime.now(timezone.utc)
         session_repo.create({
             "id": "session-abc",
@@ -143,7 +137,7 @@ class TestBuildSessionsUseCase:
         use_case = BuildSessionsUseCase(event_repo, session_repo)
         use_case.execute()
 
-        # No debe crear nueva sesión — solo asignar al existente
+        # Should not create a new session — just assign to the existing one
         sessions = session_repo.find_all()
         assert len(sessions) == 1
         assert sessions[0]["id"] == "session-abc"
@@ -164,7 +158,7 @@ class TestBuildSessionsUseCase:
 # Tests: GetSessionUseCase
 # ─────────────────────────────────────────────────────────────────────────────
 
-@__import__("pytest").mark.unit
+@pytest.mark.unit
 class TestGetSessionUseCase:
     def test_returns_none_for_unknown_session(self, event_repo, session_repo, intent_repo):
         use_case = GetSessionUseCase(session_repo, event_repo, intent_repo)

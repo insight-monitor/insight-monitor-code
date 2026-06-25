@@ -1,7 +1,7 @@
 """
 ARCH-4: Use Case — InferIntent
-Orquesta la inferencia de intención sobre una sesión cerrada.
-Depende de los puertos (Interfaces) y de servicios de dominio, no de SQLite.
+Orchestrates intent inference over a closed session.
+Depends on ports (Interfaces) and domain services, not on SQLite.
 """
 
 import logging
@@ -31,8 +31,8 @@ class InferIntentUseCase:
 
     def execute_for_session(self, session_id: str) -> Any | None:
         """
-        Corre la inferencia para una sesión específica.
-        Retorna el IntentRecord creado, o None si se omitió.
+        Runs inference for a specific session.
+        Returns the created IntentRecord, or None if skipped.
         """
         session = self.session_repo.find_by_id(session_id)
         if not session:
@@ -77,7 +77,7 @@ class InferIntentUseCase:
         return intent
 
     def execute_for_all_closed(self) -> int:
-        """Procesa todas las sesiones cerradas sin intento. Retorna cuántas se procesaron."""
+        """Processes all closed sessions without intent. Returns how many were processed."""
         closed = self.session_repo.find_all(status="closed")
         processed = 0
         for session in closed:
