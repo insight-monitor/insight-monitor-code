@@ -7,9 +7,6 @@ These tests should run in < 2 seconds total.
 import pytest
 from datetime import datetime, timezone, timedelta
 
-# All tests in this module run with: pytest -m unit
-pytestmark = pytest.mark.unit
-
 from backend.infrastructure.db.in_memory.repositories import (
     InMemoryEventRepository,
     InMemorySessionRepository,
@@ -19,6 +16,9 @@ from backend.application.use_cases.ingest_event import IngestEventUseCase
 from backend.application.use_cases.build_sessions import BuildSessionsUseCase
 from backend.application.use_cases.get_session import GetSessionUseCase
 from backend.domain.entities.raw_event import RawEvent, EventType
+
+# All tests in this module run with: pytest -m unit
+pytestmark = pytest.mark.unit
 
 
 # ─────────────────────────────────────────────────────────────────────────────
