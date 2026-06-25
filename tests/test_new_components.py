@@ -1,3 +1,4 @@
+import pytest
 import sys
 from pathlib import Path
 from uuid import uuid4
@@ -13,6 +14,7 @@ from backend.pipeline.inference_pipeline import InferencePipeline
 from backend.infrastructure.db.sqlite.database import Database
 
 
+@pytest.mark.unit
 def test_llm_parse_json_response():
     valid = '{"a": 1}'
     assert LLMService._parse_json_response(valid) == {"a": 1}
@@ -28,12 +30,14 @@ def test_llm_parse_json_response():
         pass
 
 
+@pytest.mark.unit
 def test_llm_service_init():
     svc = LLMService(api_key="dummy_key")
     assert svc.api_key == "dummy_key"
     assert svc.model is not None
 
 
+@pytest.mark.unit
 def test_prompt_builder_build():
     pb = PromptBuilder()
     session = {
@@ -61,6 +65,7 @@ def test_prompt_builder_build():
     assert "test-session" in prompt
 
 
+@pytest.mark.unit
 def test_intent_parser_success():
     parser = IntentParser()
     response = {
@@ -78,6 +83,7 @@ def test_intent_parser_success():
     assert record.session_id == "sess-123"
 
 
+@pytest.mark.unit
 def test_intent_parser_missing_required():
     parser = IntentParser()
     try:
@@ -87,6 +93,7 @@ def test_intent_parser_missing_required():
         pass
 
 
+@pytest.mark.unit
 def test_intent_parser_invalid_type():
     parser = IntentParser()
     try:
@@ -104,6 +111,7 @@ def test_intent_parser_invalid_type():
         pass
 
 
+@pytest.mark.integration
 def test_inference_pipeline_process_session():
     db = Database(":memory:")
 
