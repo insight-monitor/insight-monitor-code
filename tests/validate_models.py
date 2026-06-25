@@ -8,9 +8,9 @@ import sys
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
-from backend.models.raw_event import RawEvent, EventType
-from backend.models.session_context import SessionContext
-from backend.models.intent_record import IntentRecord, SessionType
+from backend.domain.entities.raw_event import RawEvent, EventType
+from backend.domain.entities.session_context import SessionContext
+from backend.domain.entities.intent_record import IntentRecord, SessionType
 
 
 def test_raw_event():

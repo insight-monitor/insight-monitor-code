@@ -1,12 +1,12 @@
 import logging
 from typing import Any
 
-from backend.models.intent_record import IntentRecord
+from backend.domain.entities.intent_record import IntentRecord
 from backend.pipeline.intent_parser import IntentParser, IntentParserError
 from backend.pipeline.prompt_builder import PromptBuilder
 from backend.services.llm_service import LLMService, LLMServiceError
-from backend.storage.database import Database
-from backend.storage.repositories import EventRepository, IntentRepository, SessionRepository
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import EventRepository, IntentRepository, SessionRepository
 
 logger = logging.getLogger(__name__)
 

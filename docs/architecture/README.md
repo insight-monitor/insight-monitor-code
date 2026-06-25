@@ -20,11 +20,11 @@ version: 2.0.0
 └───────────────────────┬─────────────────────────────┘
                         │ HTTP (localhost:8002)
 ┌───────────────────────▼─────────────────────────────┐
-│  Layer 2 — Backend API (FastAPI + SQLite)           │
-│  Receives RawEvents, stores in SQLite               │
-│  SessionBuilder groups events into sessions         │
-│  On session close: builds SessionContext            │
-│  Calls Gemini API for intent inference              │
+│  Layer 2 — Backend API (FastAPI + Clean Arch)       │
+│  Routes call Use Cases (Application Layer)          │
+│  BuildSessionsUseCase groups events into sessions   │
+│  InferIntentUseCase calls Gemini API for intent     │
+│  Repositories (Infrastructure Layer) persist data   │
 └──────────────┬──────────────────────┬───────────────┘
                │                     │
                ▼                     ▼
@@ -86,23 +86,21 @@ insight-monitor/
 │   ├── input_monitor.py        # pynput frequency capture
 │   └── event_sender.py         # POST RawEvents to API
 │
-├── backend/                    # Layer 2 — API + Storage
-│   ├── backend/
-│   │   ├── main.py             # FastAPI app entry point
-│   │   ├── config.py           # Environment-based settings
-│   │   ├── models/             # Pydantic schemas
-│   │   │   ├── raw_event.py
-│   │   │   ├── session_context.py
-│   │   │   └── intent_record.py
-│   │   ├── storage/
-│   │   │   ├── database.py     # SQLite connection (WAL mode, thread-safe)
-│   │   │   └── repositories.py # CRUD for events/sessions/intents
-│   │   ├── pipeline/           # Pending: session builder, prompt builder, intent parser
-│   │   ├── services/           # Pending: LLM service (Gemini API client)
-│   │   └── routes/
-│   │       ├── events.py       # POST/GET /events
-│   │       ├── sessions.py     # GET /sessions, /sessions/{id}
-│   │       └── health.py       # GET /health
+├── backend/                    # Layer 2 — API + Storage (Clean Architecture)
+│   ├── application/            # Application Layer
+│   │   └── use_cases/          # IngestEvent, BuildSessions, InferIntent, GetSession
+│   ├── domain/                 # Domain Layer
+│   │   ├── entities/           # RawEvent, SessionContext, IntentRecord
+│   │   └── ports/              # Repository interfaces
+│   ├── infrastructure/         # Infrastructure Layer
+│   │   ├── db/                 # SQLite and InMemory implementations
+│   │   └── di.py               # Dependency Injection Composition Root
+│   ├── routes/                 # Presentation Layer
+│   │   ├── events.py           # POST/GET /events
+│   │   └── sessions.py         # GET /sessions, /sessions/{id}
+│   ├── pipeline/               # Pending: prompt builder, intent parser
+│   ├── services/               # Pending: LLM service (Gemini API client)
+│   ├── main.py                 # FastAPI app entry point
 │   ├── pyproject.toml
 │   ├── poetry.lock
 │   └── data/                   # SQLite database (gitignored)
