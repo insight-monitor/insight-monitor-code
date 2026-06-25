@@ -58,8 +58,8 @@ backend/
 | **ARCH-6** | Done | DI Composition Root in `infrastructure/di.py` |
 | **ARCH-7** | Done | Unit of Work transaction boundaries in `infrastructure/db/sqlite/unit_of_work.py` |
 | **ARCH-8** | Done | Capture agent resilience: buffer, retry with backoff, graceful shutdown |
-| **ARCH-9** | **Not started** | TypeScript type generation from Pydantic still manual |
-| **ARCH-10** | Partial | This document and related updates address the gap |
+| **ARCH-9** | **Partial** | Generation script created (`scripts/generate_types.py`), manual sync still required until CI integration |
+| **ARCH-10** | Done | This document, ADRs, and related docs updated |
 | **ARCH-11** | Done | Unit tests with InMemory repos; `pytest -m unit` in < 2s |
 
 ## Remaining Technical Debt
@@ -90,4 +90,4 @@ Every new feature = new Use Case class. No modifications to existing pipeline mo
 | Integration test speed | ~30 seconds |
 | Code coupling | Zero infra imports in domain/application |
 | Capture agent resilience | Buffer 500 events, retry 1s→2s→4s |
-| Documented ADRs | 0 (being addressed) |
+| Documented ADRs | 5 (ADR-0001 through ADR-0005) |
