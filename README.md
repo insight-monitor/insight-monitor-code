@@ -100,15 +100,14 @@ npm run simulate    # Sends simulated Riwi/BPO events to the API
 │   ├── input_monitor.py  pynput (clicks/min, keystrokes/min)
 │   └── event_sender.py   HTTP client → POST events to API
 │
-├── backend/              Layer 2 — Backend API (Python/FastAPI)
-│   ├── backend/
-│   │   ├── main.py       FastAPI app entry point
-│   │   ├── config.py     Environment-based settings
-│   │   ├── models/       Pydantic schemas (RawEvent, SessionContext, IntentRecord)
-│   │   ├── storage/      SQLite connection (WAL mode) + CRUD repositories
-│   │   ├── pipeline/     Pending: session builder, prompt builder, intent parser
-│   │   ├── services/     Pending: LLM service (Gemini API client)
-│   │   └── routes/       health, events, sessions
+├── backend/              Layer 2 — Backend API (Clean Architecture)
+│   ├── application/      Use Cases (IngestEvent, BuildSessions, InferIntent, GetSession)
+│   ├── domain/           Entities (RawEvent, IntentRecord) and Ports (Repository interfaces)
+│   ├── infrastructure/   SQLite/InMemory repos, DI Composition Root (di.py), Unit of Work
+│   ├── routes/           FastAPI routers (health, events, sessions) using DI
+│   ├── pipeline/         Pending: prompt builder, intent parser
+│   ├── services/         Pending: LLM service (Gemini API client)
+│   ├── main.py           FastAPI app entry point
 │   ├── pyproject.toml
 │   └── data/             SQLite database (gitignored)
 │
