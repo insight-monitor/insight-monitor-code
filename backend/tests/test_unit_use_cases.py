@@ -55,7 +55,7 @@ class TestIngestEventUseCase:
         # Arrange
         raw = RawEvent(
             event_id="ev-test-01",
-            event_type=EventType.focus,
+            event_type=EventType.WINDOW_FOCUS,
             timestamp=datetime.now(timezone.utc),
             source="capture-agent",
             window_title="Test",
@@ -74,7 +74,7 @@ class TestIngestEventUseCase:
         events = [
             RawEvent(
                 event_id=f"ev-batch-{i}",
-                event_type=EventType.focus,
+                event_type=EventType.WINDOW_FOCUS,
                 timestamp=datetime.now(timezone.utc),
                 source="capture-agent",
             )
@@ -88,7 +88,7 @@ class TestIngestEventUseCase:
     def test_duplicate_event_not_inserted_twice(self, event_repo):
         raw = RawEvent(
             event_id="ev-dup",
-            event_type=EventType.focus,
+            event_type=EventType.WINDOW_FOCUS,
             timestamp=datetime.now(timezone.utc),
             source="capture-agent",
         )

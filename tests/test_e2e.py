@@ -11,13 +11,12 @@ sys.path.insert(0, str(BASE))
 from fastapi.testclient import TestClient
 
 from backend.config import settings
-from backend.storage.database import Database
-from backend.storage.repositories import EventRepository, SessionRepository, IntentRepository
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import EventRepository, SessionRepository, IntentRepository
 
 
 def test_e2e_session_flow(tmp_path, monkeypatch):
     """Test full flow: create session → send events → close → inference → retrieve."""
-    Database.reset()
     db_path = str(tmp_path / "test_e2e.db")
     settings.db_path = db_path
 
@@ -25,7 +24,7 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
     from backend.pipeline.inference_pipeline import InferencePipeline
     from backend.services.llm_service import LLMService
 
-    db = Database.get_instance(db_path)
+    db = Database(db_path)
     event_repo = EventRepository(db)
     session_repo = SessionRepository(db)
     intent_repo = IntentRepository(db)
@@ -124,5 +123,4 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
         assert intent_only["session_id"] == session_id
         assert intent_only["record_id"] is not None
 
-    Database.reset()
     settings.db_path = str(BASE / "backend" / "data" / "insight_monitor.db")

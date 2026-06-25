@@ -26,7 +26,7 @@ ruff = "*"
 pytest = ">=8.0"
 
 [tool.pytest.ini_options]
-testpaths = ["../tests"]
+testpaths = ["tests", "../tests"]
 python_files = ["test_*.py", "validate_*.py"]
 markers = [
     "unit: fast unit tests using InMemory repos (no DB, no network)",

@@ -10,7 +10,7 @@ from backend.services.llm_service import LLMService, LLMServiceError
 from backend.pipeline.prompt_builder import PromptBuilder
 from backend.pipeline.intent_parser import IntentParser, IntentParserError
 from backend.pipeline.inference_pipeline import InferencePipeline
-from backend.storage.database import Database
+from backend.infrastructure.db.sqlite.database import Database
 
 
 def test_llm_parse_json_response():
@@ -105,11 +105,10 @@ def test_intent_parser_invalid_type():
 
 
 def test_inference_pipeline_process_session():
-    Database.reset()
-    db = Database.get_instance(":memory:")
+    db = Database(":memory:")
 
     session_repo = __import__(
-        "backend.storage.repositories", fromlist=["SessionRepository", "EventRepository"]
+        "backend.infrastructure.db.sqlite.repositories", fromlist=["SessionRepository", "EventRepository"]
     )
     SessionRepo = session_repo.SessionRepository
     EventRepo = session_repo.EventRepository
@@ -185,8 +184,6 @@ def test_inference_pipeline_process_session():
     assert stored is not None
     assert stored["session_type"] == "applied_learning"
     assert stored["goal"] == "Build API endpoint"
-
-    Database.reset()
 
 
 if __name__ == "__main__":
