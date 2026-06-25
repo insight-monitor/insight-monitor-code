@@ -6,8 +6,8 @@ from uuid import uuid4
 import pytest
 
 from backend.config import settings
-from backend.storage.database import Database
-from backend.storage.repositories import (
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import (
     EventRepository,
     SessionRepository,
     IntentRepository,
@@ -25,7 +25,7 @@ def db(tmp_path):
     db_path = str(tmp_path / "test.db")
     old_path = settings.db_path
     settings.db_path = db_path
-    database = Database.get_instance()
+    database = Database()
     yield database
     Database.reset()
     settings.db_path = old_path

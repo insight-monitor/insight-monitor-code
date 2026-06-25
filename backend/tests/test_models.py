@@ -6,8 +6,8 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from backend.models.raw_event import RawEvent, EventType
-from backend.models.intent_record import IntentRecord
+from backend.domain.entities.raw_event import RawEvent, EventType
+from backend.domain.entities.intent_record import IntentRecord
 
 
 class TestRawEvent:

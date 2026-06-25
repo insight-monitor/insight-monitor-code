@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from backend.models.intent_record import IntentRecord
+from backend.domain.entities.intent_record import IntentRecord
 
 logger = logging.getLogger(__name__)
 

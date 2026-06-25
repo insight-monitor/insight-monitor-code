@@ -4,8 +4,8 @@ import os
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from backend.storage.database import Database
-from backend.storage.repositories import EventRepository, SessionRepository
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import EventRepository, SessionRepository
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +180,6 @@ class SessionBuilder:
 
 
 def run_session_builder_once():
-    db = Database.get_instance()
+    db = Database()
     builder = SessionBuilder(db)
     builder.process_pending_events()

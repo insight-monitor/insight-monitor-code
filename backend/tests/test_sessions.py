@@ -3,8 +3,8 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from backend.storage.database import Database
-from backend.storage.repositories import SessionRepository
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import SessionRepository
 
 
 class TestListSessions:
@@ -111,7 +111,7 @@ class TestCloseSession:
 
 def _seed_session(status: str = "open") -> str:
     """Insert a session directly into the database and return its id."""
-    repo = SessionRepository(Database.get_instance())
+    repo = SessionRepository(Database())
     session_id = str(uuid4())
     repo.create({
         "id": session_id,
