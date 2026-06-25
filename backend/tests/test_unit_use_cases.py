@@ -7,11 +7,6 @@ These tests should run in < 2 seconds total.
 import pytest
 from datetime import datetime, timezone, timedelta
 
-from backend.infrastructure.db.in_memory.repositories import (
-    InMemoryEventRepository,
-    InMemorySessionRepository,
-    InMemoryIntentRepository,
-)
 from backend.application.use_cases.ingest_event import IngestEventUseCase
 from backend.application.use_cases.build_sessions import BuildSessionsUseCase
 from backend.application.use_cases.get_session import GetSessionUseCase
