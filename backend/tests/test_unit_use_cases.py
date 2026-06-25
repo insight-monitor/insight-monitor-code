@@ -4,6 +4,9 @@ Verifica los Use Cases en completo aislamiento — sin SQLite, sin red.
 Estos tests deben correr en < 2 segundos en total.
 """
 
+# Todos los tests de este módulo se ejecutan con: pytest -m unit
+pytestmark = __import__("pytest").mark.unit
+
 import pytest
 from datetime import datetime, timezone
 
@@ -45,6 +48,7 @@ def _make_event(event_id="ev-001", process="firefox", session_id=None):
 # Tests: IngestEventUseCase
 # ─────────────────────────────────────────────────────────────────────────────
 
+@__import__("pytest").mark.unit
 class TestIngestEventUseCase:
     def test_insert_single_event_returns_event_id(self, event_repo):
         # Arrange
@@ -103,6 +107,7 @@ class TestIngestEventUseCase:
 # Tests: BuildSessionsUseCase
 # ─────────────────────────────────────────────────────────────────────────────
 
+@__import__("pytest").mark.unit
 class TestBuildSessionsUseCase:
     def test_no_events_returns_zero(self, event_repo, session_repo):
         use_case = BuildSessionsUseCase(event_repo, session_repo)
@@ -159,6 +164,7 @@ class TestBuildSessionsUseCase:
 # Tests: GetSessionUseCase
 # ─────────────────────────────────────────────────────────────────────────────
 
+@__import__("pytest").mark.unit
 class TestGetSessionUseCase:
     def test_returns_none_for_unknown_session(self, event_repo, session_repo, intent_repo):
         use_case = GetSessionUseCase(session_repo, event_repo, intent_repo)

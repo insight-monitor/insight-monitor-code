@@ -28,6 +28,11 @@ pytest = ">=8.0"
 [tool.pytest.ini_options]
 testpaths = ["../tests"]
 python_files = ["test_*.py", "validate_*.py"]
+markers = [
+    "unit: fast unit tests using InMemory repos (no DB, no network)",
+    "integration: integration tests that use SQLite on disk",
+]
+filterwarnings = ["ignore::DeprecationWarning"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
