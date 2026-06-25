@@ -24,6 +24,7 @@ package-mode = false
 [tool.poetry.group.dev.dependencies]
 ruff = "*"
 pytest = ">=8.0"
+datamodel-codegen = "*"
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "../tests"]

@@ -9,7 +9,8 @@
     "dashboard:build": "npm run build --prefix dashboard",
     "capture": "cd capture && python agent.py",
     "seed": "cd backend && ../scripts/run-backend.sh seed",
-    "simulate": "cd backend && ../scripts/run-backend.sh simulate"
+    "simulate": "cd backend && ../scripts/run-backend.sh simulate",
+    "generate:types": "python scripts/generate_types.py"
   },
   "dependencies": {
     "concurrently": "^10.0.3"
