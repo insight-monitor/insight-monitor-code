@@ -5,15 +5,16 @@ Full interactive API documentation is available at `http://localhost:8002/docs` 
 ## Endpoints
 
 | Method | Path | Description | Status |
-|---|---|---|---|
-| `GET` | `/health` | Health check + agent status | ✅ |
+|---|---|---|---|---|
+| `GET` | `/health` | Health check + agent status + version | ✅ |
 | `POST` | `/events` | Ingest a single RawEvent | ✅ |
 | `POST` | `/events/batch` | Ingest multiple RawEvents | ✅ |
 | `GET` | `/events` | List recent events (`?limit=50`) | ✅ |
 | `GET` | `/events/session/{id}` | Events for a specific session | ✅ |
 | `GET` | `/sessions` | List sessions (`?status=open&limit=50`) | ✅ |
-| `GET` | `/sessions/{id}` | Session detail with intent | ✅ |
+| `GET` | `/sessions/{id}` | Session detail with events + intent | ✅ |
 | `GET` | `/sessions/{id}/intent` | Session intent record only | ✅ |
+| `POST` | `/sessions/{id}/close` | Manually close a session | ✅ |
 
 ## Data Models
 

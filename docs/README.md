@@ -6,7 +6,7 @@ This directory contains the **technical documentation** for the Insight Monitor 
 
 | Path | Description |
 |------|-------------|
-| `architecture/` | System architecture, design decisions, scaling roadmap |
+| `architecture/` | System architecture, design decisions, scaling roadmap, ADRs, current state |
 | `data-model/` | Data schemas, signal acquisition, database structure |
 | `inference/` | Prompt architecture, confidence model, user context injection |
 | `configuration/` | Configuration model and deployment options |
