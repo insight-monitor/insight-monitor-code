@@ -4,8 +4,13 @@ ARCH-9: Generate TypeScript types from Pydantic models.
 
 Uses datamodel-codegen to generate TypeScript interfaces from backend Pydantic models.
 Output: dashboard/src/api/generated-types.ts
+
+Prerequisites:
+    pip install datamodel-codegen
+    # or: poetry add --group dev datamodel-codegen (in backend/)
 """
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +28,12 @@ MODELS = [
 
 
 def main() -> int:
+    # Check if datamodel-codegen is available
+    if not shutil.which("datamodel-codegen"):
+        print("Error: datamodel-codegen not found in PATH", file=sys.stderr)
+        print("Install it with: pip install datamodel-codegen", file=sys.stderr)
+        return 1
+
     # Build the command to generate TypeScript from multiple Pydantic files
     cmd = [
         "datamodel-codegen",
