@@ -1,6 +1,7 @@
-import json
+import json                       # Standard library JSON serialization and parsing
 
-# Instrucción de sistema para definir las reglas de clasificación del LLM
+
+# System instructions to configure the classification logic of the LLM
 SYSTEM_INSTRUCTION = """You are an impartial activity analyst. Your task is to analyze work/study sessions and classify them into the structured JSON output described below.
 
 SESSION TYPE (the primary classification):
@@ -57,7 +58,7 @@ CONTEXTUAL DISAMBIGUATION:
   - Frequent switching between IDE + browser + documentation in a learning context = expected learning behavior, NOT friction
 - Always evaluate the full pattern of signals, not any single app in isolation."""
 
-# Esquema JSON que la respuesta del LLM debe cumplir
+# Expected JSON schema for the LLM structured response
 OUTPUT_SCHEMA = {
     "type": "object",
     "properties": {
@@ -100,13 +101,13 @@ OUTPUT_SCHEMA = {
 }
 
 
-# Clase encargada de estructurar el prompt final para el LLM
+# Builder class that structures the prompt layout sent to the LLM
 class PromptBuilder:
     def __init__(self, user_context: dict | None = None):
-        self.user_context = user_context or {} # Contexto opcional del usuario (rol, preferencias)
+        self.user_context = user_context or {} # Optional user preferences and roles context dict
 
     def build(self, session: dict, events: list[dict]) -> str:
-        # Genera el texto del prompt completo concatenando instrucciones, contexto y esquema
+        # Construct the final prompt text string from system instruction, environmental data, and output schema
         env_context = self._build_environmental_context(session, events)
         user_ctx = self._build_user_context()
 
@@ -127,7 +128,7 @@ class PromptBuilder:
         return "\n".join(parts)
 
     def _build_environmental_context(self, session: dict, events: list[dict]) -> str:
-        # Formatea los metadatos de la sesión y los últimos 20 eventos en texto plano para el prompt
+        # Format session metrics and the list of recent events as a plain text block
         lines = []
         lines.append(f"Session ID: {session.get('id', 'unknown')}")
         lines.append(f"Start time: {session.get('start_time', 'unknown')}")
@@ -136,19 +137,19 @@ class PromptBuilder:
 
         app_sequence = session.get('app_sequence', [])
         if isinstance(app_sequence, str):
-            app_sequence = json.loads(app_sequence) # Deserializa secuencia si es texto JSON
+            app_sequence = json.loads(app_sequence) # Deserialize the app sequence list if it is a JSON string
         lines.append(f"App sequence: {', '.join(app_sequence) if app_sequence else 'none recorded'}")
 
         active_apps = session.get('active_apps', [])
         if isinstance(active_apps, str):
-            active_apps = json.loads(active_apps) # Deserializa lista si es texto JSON
+            active_apps = json.loads(active_apps) # Deserialize the active apps list if it is a JSON string
         lines.append(f"Active apps: {', '.join(active_apps) if active_apps else 'none recorded'}")
 
         lines.append(f"Event count: {session.get('event_count', 0)}")
         lines.append(f"Screenshot count: {session.get('screenshot_count', 0)}")
 
         if events:
-            max_shown = 20 # Muestra máximo 20 eventos para evitar desbordar el contexto
+            max_shown = 20 # Limit the events to a maximum of 20 to fit within LLM input window limits
             lines.append(f"Recent events ({min(len(events), max_shown)} of {len(events)}):")
             for event in events[-max_shown:]:
                 title = event.get('window_title', event.get('browser_tab_title', ''))
@@ -157,13 +158,13 @@ class PromptBuilder:
                 process = event.get('process_name', '')
                 line = f"  [{ts}] {etype} | {process}"
                 if title:
-                    line += f" | {title[:120]}" # Trunca títulos largos
+                    line += f" | {title[:120]}" # Truncate long titles to keep text lines short
                 lines.append(line)
 
         return "\n".join(lines)
 
     def _build_user_context(self) -> str:
-        # Serializa el contexto del usuario (preferencias, metas personales) en formato markdown
+        # Serialize user context dictionary entries to markdown list format
         if not self.user_context:
             return ""
         lines = []

@@ -1,19 +1,17 @@
-import logging
-from datetime import datetime, timezone
-from typing import Any
-from uuid import uuid4
+import logging                     # Standard library logging module
+from datetime import datetime, timezone # Standard library datetime types
+from typing import Any                 # Standard library type hinting for generic types
+from uuid import uuid4                 # Standard library UUID version 4 generator
 
-from backend.domain.entities.intent_record import IntentRecord
-
-logger = logging.getLogger(__name__)
+from backend.domain.entities.intent_record import IntentRecord # Output schema representing inferred intent
 
 
-# Excepción lanzada cuando la respuesta del LLM tiene formato inválido
+# Exception thrown when the LLM structured response is invalid or missing required keys
 class IntentParserError(Exception):
     pass
 
 
-# Clase encargada de validar y convertir la respuesta del LLM a IntentRecord
+# Parser component that validates and transforms the LLM dictionary response to IntentRecord
 class IntentParser:
     def parse(
         self,
@@ -21,13 +19,13 @@ class IntentParser:
         session_id: str,
         raw_text: str | None = None,
     ) -> IntentRecord:
-        # Valida el diccionario del LLM y construye el objeto de dominio IntentRecord
+        # Validate LLM output and instantiate the domain IntentRecord entity
         self._validate_response(llm_response)
 
         record = IntentRecord(
-            record_id=str(uuid4()),                            # ID único autogenerado
+            record_id=str(uuid4()),                            # Generate a unique record ID
             session_id=session_id,
-            timestamp=datetime.now(timezone.utc),              # Marca de tiempo UTC actual
+            timestamp=datetime.now(timezone.utc),              # Set current UTC timestamp
             session_type=llm_response.get("session_type", "ambiguous"),
             goal=llm_response.get("goal", ""),
             goal_confidence=self._safe_float(
@@ -35,7 +33,7 @@ class IntentParser:
             ),
             friction_points=llm_response.get("friction_points", []),
             friction_confidence=self._safe_float(
-                llm_response.get("friction_confidence")        # None si no hay fricción
+                llm_response.get("friction_confidence")        # Return None if not found
             ),
             category=llm_response.get("category", "ambiguous"),
             category_confidence=self._safe_float(
@@ -46,14 +44,14 @@ class IntentParser:
             alternatives=llm_response.get("alternatives", []),
             app_summary=llm_response.get("app_summary", {}),
             raw_timeline_summary=llm_response.get("raw_timeline_summary", ""),
-            raw_llm_response=raw_text,                         # Respuesta cruda para debugging
+            raw_llm_response=raw_text,                         # Store raw text for debug traceability
         )
 
         return record
 
     @staticmethod
     def _validate_response(response: dict[str, Any]) -> None:
-        # Valida que todos los campos requeridos estén presentes y tengan el tipo correcto
+        # Check presence and types of all required output properties
         required = [
             "session_type", "goal", "goal_confidence",
             "category", "category_confidence", "evidence",
@@ -94,7 +92,7 @@ class IntentParser:
 
     @staticmethod
     def _safe_float(value: Any, default: float | None = None) -> float | None:
-        # Convierte un valor a float de manera segura retornando un default en caso de error
+        # Convert value to float representation safely returning fallback default on failure
         if value is None:
             return default
         try:

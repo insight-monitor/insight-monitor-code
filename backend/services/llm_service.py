@@ -1,19 +1,17 @@
-import json
-import logging
-import time
-from typing import Any
+import json                        # Standard library JSON serialization
+import logging                     # Standard library logging module
+import time                        # Standard library time access and sleep
+from typing import Any                 # Standard library type hinting for generic types
 
-from backend.config import settings
-
-logger = logging.getLogger(__name__)
+from backend.config import settings    # Configuration settings from environment files
 
 
-# Excepción lanzada ante fallos en la llamada o el parseo del LLM
+# Exception raised when the LLM call fails or returns non-parseable output
 class LLMServiceError(Exception):
     pass
 
 
-# Servicio para interactuar con proveedores de LLM (OpenAI y Gemini)
+# Service class coordinating the LLM prompt completion requests
 class LLMService:
     def __init__(
         self,
@@ -23,16 +21,16 @@ class LLMService:
         timeout_sec: int | None = None,
         max_retries: int | None = None,
     ):
-        # Lee la configuración global o usa los parámetros explícitos
+        # Read default parameters from configurations or accept custom overrides
         self.provider = (provider or settings.llm_provider).lower()
         self.api_key = api_key or settings.api_key
         self.model = model or settings.llm_model
         self.timeout_sec = timeout_sec or settings.inference_timeout_sec
         self.max_retries = max_retries or settings.inference_max_retries
-        self._client: Any = None  # Inicializado de forma lazy
+        self._client: Any = None  # Lazily instantiated client object reference
 
     def _get_client(self) -> Any:
-        # Retorna el cliente del proveedor instanciado de forma lazy (singleton)
+        # Instantiate and cache the API client client based on chosen LLM provider
         if self._client is not None:
             return self._client
 
@@ -43,10 +41,10 @@ class LLMService:
             )
 
         if self.provider == "openai":
-            from openai import OpenAI
+            from openai import OpenAI  # OpenAI client SDK import
             self._client = OpenAI(api_key=self.api_key, timeout=self.timeout_sec)
         elif self.provider == "gemini":
-            from google import genai
+            from google import genai  # Google GenAI SDK client import
             self._client = genai.Client(api_key=self.api_key)
         else:
             raise LLMServiceError(f"Unsupported LLM provider: {self.provider}")
@@ -54,7 +52,7 @@ class LLMService:
         return self._client
 
     def generate(self, prompt: str) -> str:
-        # Realiza la inferencia del prompt con reintentos y backoff exponencial
+        # Submit the prompt payload with retry attempts using exponential backoff
         last_error: Exception | None = None
 
         for attempt in range(1, self.max_retries + 1):
@@ -88,21 +86,21 @@ class LLMService:
                     attempt, self.max_retries, e,
                 )
                 if attempt < self.max_retries:
-                    time.sleep(2 ** attempt)  # Pausa exponencial de 2s, 4s, 8s...
+                    time.sleep(2 ** attempt)  # Wait with exponential backoff: 2s, 4s, 8s...
 
         raise LLMServiceError(
             f"LLM call failed after {self.max_retries} attempts: {last_error}"
         )
 
     def generate_structured(self, prompt: str) -> tuple[str, dict[str, Any]]:
-        # Genera el texto del LLM y lo parsea a un diccionario estructurado
+        # Process generation response text and format it as structured JSON dictionary
         raw = self.generate(prompt)
         parsed = self._parse_json_response(raw)
         return raw, parsed
 
     @staticmethod
     def _parse_json_response(raw: str) -> dict[str, Any]:
-        # Limpia los delimitadores de código markdown ```json y parsea a JSON
+        # Strip markdown fences if present and deserialize clean string to dictionary
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`")

@@ -1,9 +1,9 @@
-from enum import Enum
-from pydantic import BaseModel
-from datetime import datetime
+from enum import Enum                 # Standard library Enum support
+from pydantic import BaseModel        # Pydantic base model class
+from datetime import datetime         # Standard library date and time representation
 
 
-# Tipos de eventos capturados por el monitor de actividad
+# Enumeration of valid event types captured by the monitor agent
 class EventType(str, Enum):
     WINDOW_FOCUS = "window_focus"
     SCREENSHOT = "screenshot"
@@ -12,25 +12,25 @@ class EventType(str, Enum):
     SESSION_BOUNDARY = "session_boundary"
 
 
-# Evento crudo capturado por el agente de monitoreo
+# Immutable raw event captured from the user's environment
 class RawEvent(BaseModel):
-    event_id: str                          # Identificador único del evento (UUID)
-    event_type: EventType                  # Tipo de evento capturado
-    timestamp: datetime                    # Fecha y hora UTC del evento
-    source: str                            # Módulo origen del evento
+    event_id: str                          # Unique identifier of the event (UUID)
+    event_type: EventType                  # Classification type of the captured event
+    timestamp: datetime                    # UTC timestamp when the event occurred
+    source: str                            # Collector module source identifier
 
-    window_title: str | None = None        # Título de la ventana activa
-    process_name: str | None = None        # Nombre del proceso ejecutable (ej. code.exe)
-    pid: int | None = None                 # ID del proceso del sistema operativo
+    window_title: str | None = None        # Title text of the active focused window
+    process_name: str | None = None        # Name of the active process executable (e.g. code.exe)
+    pid: int | None = None                 # OS process ID of the active window
 
-    screenshot_path: str | None = None     # Ruta a la captura de pantalla completa
-    screenshot_thumbnail: str | None = None # Ruta a la miniatura de la captura
+    screenshot_path: str | None = None     # Absolute file path to the full screenshot image
+    screenshot_thumbnail: str | None = None # File path to the generated thumbnail image
 
-    clicks_per_min: float | None = None    # Clics por minuto detectados
-    keystrokes_per_min: float | None = None # Pulsaciones de teclado por minuto
+    clicks_per_min: float | None = None    # Clicks rate per minute on input activity
+    keystrokes_per_min: float | None = None # Keystrokes rate per minute on input activity
 
-    url: str | None = None                 # URL activa del navegador web
-    browser_tab_title: str | None = None   # Título de la pestaña activa del navegador
+    url: str | None = None                 # Web page address from browser context
+    browser_tab_title: str | None = None   # Title text of the active browser tab
 
-    session_id: str | None = None          # ID de sesión asociado al evento
-    session_boundary_type: str | None = None # Tipo de límite: "start" o "end"
+    session_id: str | None = None          # Associated logical session ID
+    session_boundary_type: str | None = None # Session boundary action type: "start" or "end"
