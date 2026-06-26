@@ -1,5 +1,8 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 class Settings:
@@ -13,8 +16,9 @@ class Settings:
             "http://localhost:5173",
         ).split(",")
         self.api_version: str = os.getenv("INSIGHT_API_VERSION", "0.1.0")
-        self.gemini_api_key: str | None = os.getenv("GEMINI_API_KEY")
-        self.gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        self.llm_provider: str = os.getenv("LLM_PROVIDER", "openai")
+        self.api_key: str | None = os.getenv("API_KEY")
+        self.llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
         self.inference_timeout_sec: int = int(
             os.getenv("INFERENCE_TIMEOUT_SEC", "30")
         )

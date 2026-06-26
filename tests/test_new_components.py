@@ -57,8 +57,12 @@ def test_prompt_builder_build():
     prompt = pb.build(session, events)
     assert isinstance(prompt, str)
     assert "SYSTEM INSTRUCTION" in prompt
-    assert "RIWI CATEGORIES" in prompt
+    assert "SESSION TYPE (the primary classification)" in prompt
+    assert "CATEGORY (a secondary, more specific classification)" in prompt
     assert "test-session" in prompt
+    assert "OUTPUT FORMAT" in prompt
+    assert "session_type" in prompt
+    assert "goal_confidence" in prompt
 
 
 def test_intent_parser_success():

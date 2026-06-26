@@ -24,6 +24,7 @@ async def create_events_batch(
     count = use_case.execute_batch(events)
     return {"status": "ok", "count": count}
 
+
 @router.get("")
 async def list_events(
     limit: int = 50,

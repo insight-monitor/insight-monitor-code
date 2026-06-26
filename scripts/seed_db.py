@@ -5,7 +5,7 @@ Usage:
     python scripts/seed_db.py
 
 Relies on the app's Database._init_schema() to ensure correct table schemas.
-Run the backend at least once before seeding, or call Database.get_instance()
+Run the backend at least once before seeding, or call Database()
 which triggers schema creation automatically.
 """
 

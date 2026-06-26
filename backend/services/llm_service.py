@@ -3,8 +3,6 @@ import logging
 import time
 from typing import Any
 
-from google import genai
-
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -17,25 +15,38 @@ class LLMServiceError(Exception):
 class LLMService:
     def __init__(
         self,
+        provider: str | None = None,
         api_key: str | None = None,
         model: str | None = None,
         timeout_sec: int | None = None,
         max_retries: int | None = None,
     ):
-        self.api_key = api_key or settings.gemini_api_key
-        self.model = model or settings.gemini_model
+        self.provider = (provider or settings.llm_provider).lower()
+        self.api_key = api_key or settings.api_key
+        self.model = model or settings.llm_model
         self.timeout_sec = timeout_sec or settings.inference_timeout_sec
         self.max_retries = max_retries or settings.inference_max_retries
-        self._client: genai.Client | None = None
+        self._client: Any = None
 
-    def _get_client(self) -> genai.Client:
-        if self._client is None:
-            if not self.api_key:
-                raise LLMServiceError(
-                    "GEMINI_API_KEY is not configured. "
-                    "Set it in the .env file or environment variables."
-                )
+    def _get_client(self) -> Any:
+        if self._client is not None:
+            return self._client
+
+        if not self.api_key:
+            raise LLMServiceError(
+                "API_KEY is not configured. "
+                "Set it in the .env file or environment variables."
+            )
+
+        if self.provider == "openai":
+            from openai import OpenAI
+            self._client = OpenAI(api_key=self.api_key, timeout=self.timeout_sec)
+        elif self.provider == "gemini":
+            from google import genai
             self._client = genai.Client(api_key=self.api_key)
+        else:
+            raise LLMServiceError(f"Unsupported LLM provider: {self.provider}")
+
         return self._client
 
     def generate(self, prompt: str) -> str:
@@ -44,16 +55,26 @@ class LLMService:
         for attempt in range(1, self.max_retries + 1):
             try:
                 client = self._get_client()
-                response = client.models.generate_content(
-                    model=self.model,
-                    contents=prompt,
-                    config={
-                        "max_output_tokens": 2048,
-                        "temperature": 0.2,
-                        "top_p": 0.95,
-                    },
-                )
-                return response.text
+                if self.provider == "openai":
+                    response = client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=2048,
+                        temperature=0.2,
+                        top_p=0.95,
+                    )
+                    return response.choices[0].message.content
+                else:
+                    response = client.models.generate_content(
+                        model=self.model,
+                        contents=prompt,
+                        config={
+                            "max_output_tokens": 2048,
+                            "temperature": 0.2,
+                            "top_p": 0.95,
+                        },
+                    )
+                    return response.text
 
             except Exception as e:
                 last_error = e
