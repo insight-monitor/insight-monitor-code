@@ -1,13 +1,24 @@
-import logging                    # Standard library logging module
-from typing import Any                 # Standard library type hinting for generic types
+"""Clean Architecture use case for session intent inference.
 
-from backend.domain.ports.repositories import IEventRepository, ISessionRepository, IIntentRepository # Port interfaces for repository classes
+Exports:
+    InferIntentUseCase: Use case orchestrating session classification via injected components.
+"""
+
+import logging
+from typing import Any
+
+from backend.domain.ports.repositories import (
+    IEventRepository,
+    ISessionRepository,
+    IIntentRepository,
+)
 
 logger = logging.getLogger(__name__)
 
 
-# Clean Architecture use case orchestrating the session classification via injected components
 class InferIntentUseCase:
+    """Clean Architecture use case orchestrating the session classification via injected components."""
+
     def __init__(
         self,
         session_repo: ISessionRepository,
@@ -17,7 +28,16 @@ class InferIntentUseCase:
         prompt_builder: Any,
         intent_parser: Any,
     ):
-        # Repositories and pipeline components are injected as parameters
+        """Initialize with injected repository and pipeline components.
+
+        Args:
+            session_repo: Repository for session data access.
+            event_repo: Repository for event data access.
+            intent_repo: Repository for intent record persistence.
+            llm_service: LLM service for prompt completion.
+            prompt_builder: Component that constructs LLM prompts.
+            intent_parser: Component that parses LLM responses.
+        """
         self.session_repo = session_repo
         self.event_repo = event_repo
         self.intent_repo = intent_repo
@@ -26,7 +46,14 @@ class InferIntentUseCase:
         self.intent_parser = intent_parser
 
     def execute_for_session(self, session_id: str) -> Any | None:
-        # Run classification workflow on the session matching session_id
+        """Run classification workflow on the session matching session_id.
+
+        Args:
+            session_id: Identifier of the session to classify.
+
+        Returns:
+            IntentRecord if classification succeeded, None otherwise.
+        """
         session = self.session_repo.find_by_id(session_id)
         if not session:
             logger.warning("Session %s not found for inference", session_id)
@@ -75,7 +102,11 @@ class InferIntentUseCase:
         return intent
 
     def execute_for_all_closed(self) -> int:
-        # Batch execute session classification workflow on all closed status sessions
+        """Batch execute session classification workflow on all closed status sessions.
+
+        Returns:
+            Number of sessions successfully processed.
+        """
         closed = self.session_repo.find_all(status="closed")
         processed = 0
         for session in closed:

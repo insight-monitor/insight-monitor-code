@@ -1,20 +1,36 @@
-import json                        # Standard library JSON serialization
-import logging                     # Standard library logging module
-import time                        # Standard library time access and sleep
-from typing import Any                 # Standard library type hinting for generic types
+"""LLM service orchestrating prompt completion requests with retry logic.
 
-from backend.config import settings    # Configuration settings from environment files
+Exports:
+    LLMService: Coordinates LLM API calls with provider abstraction.
+    LLMServiceError: Exception raised when LLM call fails or returns invalid output.
+"""
 
-logger = logging.getLogger(__name__) # Standard library logger for runtime diagnostics
+import json
+import logging
+import time
+from typing import Any
+
+from backend.config import settings
+
+logger = logging.getLogger(__name__)
 
 
-# Exception raised when the LLM call fails or returns non-parseable output
 class LLMServiceError(Exception):
+    """Exception raised when the LLM call fails or returns non-parseable output."""
     pass
 
 
-# Service class coordinating the LLM prompt completion requests
 class LLMService:
+    """Service class coordinating LLM prompt completion requests.
+
+    Args:
+        provider: LLM provider name ("openai" or "gemini").
+        api_key: API key for the provider.
+        model: Model identifier to use.
+        timeout_sec: Request timeout in seconds.
+        max_retries: Maximum retry attempts for failed calls.
+    """
+
     def __init__(
         self,
         provider: str | None = None,
@@ -23,7 +39,7 @@ class LLMService:
         timeout_sec: int | None = None,
         max_retries: int | None = None,
     ):
-        # Read default parameters from configurations or accept custom overrides
+        # Read default parameters from configuration or accept custom overrides
         self.provider = (provider or settings.llm_provider).lower()
         self.api_key = api_key or settings.api_key
         self.model = model or settings.llm_model
@@ -32,7 +48,14 @@ class LLMService:
         self._client: Any = None  # Lazily instantiated client object reference
 
     def _get_client(self) -> Any:
-        # Instantiate and cache the API client client based on chosen LLM provider
+        """Instantiate and cache the API client based on chosen LLM provider.
+
+        Returns:
+            Provider-specific client instance.
+
+        Raises:
+            LLMServiceError: If API key is missing or provider is unsupported.
+        """
         if self._client is not None:
             return self._client
 
@@ -43,10 +66,10 @@ class LLMService:
             )
 
         if self.provider == "openai":
-            from openai import OpenAI  # OpenAI client SDK import
+            from openai import OpenAI
             self._client = OpenAI(api_key=self.api_key, timeout=self.timeout_sec)
         elif self.provider == "gemini":
-            from google import genai  # Google GenAI SDK client import
+            from google import genai
             self._client = genai.Client(api_key=self.api_key)
         else:
             raise LLMServiceError(f"Unsupported LLM provider: {self.provider}")
@@ -54,7 +77,17 @@ class LLMService:
         return self._client
 
     def generate(self, prompt: str) -> str:
-        # Submit the prompt payload with retry attempts using exponential backoff
+        """Submit the prompt payload with retry attempts using exponential backoff.
+
+        Args:
+            prompt: Formatted prompt string to send to the LLM.
+
+        Returns:
+            Raw response text from the LLM.
+
+        Raises:
+            LLMServiceError: If all retry attempts fail.
+        """
         last_error: Exception | None = None
 
         for attempt in range(1, self.max_retries + 1):
@@ -95,14 +128,31 @@ class LLMService:
         )
 
     def generate_structured(self, prompt: str) -> tuple[str, dict[str, Any]]:
-        # Process generation response text and format it as structured JSON dictionary
+        """Process generation response text and format it as structured JSON dictionary.
+
+        Args:
+            prompt: Formatted prompt string to send to the LLM.
+
+        Returns:
+            Tuple of (raw_response_text, parsed_json_dict).
+        """
         raw = self.generate(prompt)
         parsed = self._parse_json_response(raw)
         return raw, parsed
 
     @staticmethod
     def _parse_json_response(raw: str) -> dict[str, Any]:
-        # Strip markdown fences if present and deserialize clean string to dictionary
+        """Strip markdown fences if present and deserialize clean string to dictionary.
+
+        Args:
+            raw: Raw response text from the LLM.
+
+        Returns:
+            Parsed JSON dictionary.
+
+        Raises:
+            LLMServiceError: If JSON parsing fails.
+        """
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`")

@@ -1,11 +1,18 @@
-import json                        # Standard library JSON serialization
-import logging                     # Standard library logging module
-import os                          # Standard library OS interface support
-from datetime import datetime, timezone # Standard library datetime types
-from uuid import uuid4                 # Standard library UUID version 4 generator
+"""Session builder: groups raw tracked events into sequential workspace sessions.
 
-from backend.infrastructure.db.sqlite.database import Database # Database connection component
-from backend.infrastructure.db.sqlite.repositories import EventRepository, SessionRepository # Data repository objects
+Exports:
+    SessionBuilder: Builder class grouping raw events into sessions.
+    run_session_builder_once: Utility function to run a single builder iteration.
+"""
+
+import json
+import logging
+import os
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import EventRepository, SessionRepository
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +22,22 @@ INACTIVITY_THRESHOLD = int(os.getenv("INACTIVITY_THRESHOLD_MINUTES", "8"))
 POLL_INTERVAL = int(os.getenv("SESSION_BUILDER_POLL_SECONDS", "30"))
 
 
-# Builder class grouping raw tracked events into sequential workspace sessions
 class SessionBuilder:
+    """Builder class grouping raw tracked events into sequential workspace sessions."""
+
     def __init__(self, db: Database):
+        """Initialize with database connection and repositories.
+
+        Args:
+            db: Database connection instance.
+        """
         self.db = db
         self.event_repo = EventRepository(db)
         self.session_repo = SessionRepository(db)
         self._running = False
 
-    # Start the background session builder execution polling loop
-    def start(self):
+    def start(self) -> None:
+        """Start the background session builder execution polling loop."""
         self._running = True
         logger.info(
             "Session builder started (inactivity_threshold=%dmin, poll=%ds)",
@@ -32,13 +45,13 @@ class SessionBuilder:
             POLL_INTERVAL,
         )
 
-    # Halt the execution loop of the session builder component
-    def stop(self):
+    def stop(self) -> None:
+        """Halt the execution loop of the session builder component."""
         self._running = False
         logger.info("Session builder stopped")
 
-    # Fetch and associate untagged activity events to open or new sessions
-    def process_pending_events(self):
+    def process_pending_events(self) -> None:
+        """Fetch and associate untagged activity events to open or new sessions."""
         unassigned = self.db.fetch_all(
             "SELECT * FROM raw_events WHERE session_id IS NULL ORDER BY timestamp ASC"
         )
@@ -65,10 +78,18 @@ class SessionBuilder:
         for session in open_sessions:
             self._check_close(session)
 
-    # Evaluate whether a pending event occurred close enough to belong to an open session
     def _find_session_for_event(
         self, event: dict, open_sessions: list[dict]
     ) -> dict | None:
+        """Evaluate whether a pending event occurred close enough to belong to an open session.
+
+        Args:
+            event: Raw event dictionary.
+            open_sessions: List of open session dictionaries.
+
+        Returns:
+            Matching session dictionary or None if no match found.
+        """
         event_ts = self._parse_timestamp(event["timestamp"])
 
         for session in open_sessions:
@@ -86,8 +107,15 @@ class SessionBuilder:
 
         return None
 
-    # Instantiate a new empty session entry in the database tables
     def _create_session(self, first_event: dict) -> str:
+        """Instantiate a new empty session entry in the database tables.
+
+        Args:
+            first_event: The first event that triggers session creation.
+
+        Returns:
+            New session ID string.
+        """
         session_id = str(uuid4())
         session = {
             "id": session_id,
@@ -109,16 +137,26 @@ class SessionBuilder:
         logger.info("Created session %s starting at %s", session_id, first_event["timestamp"])
         return session_id
 
-    # Update event record foreign key property value to link it to session
-    def _assign_event(self, event: dict, session: dict):
+    def _assign_event(self, event: dict, session: dict) -> None:
+        """Update event record foreign key to link it to session.
+
+        Args:
+            event: Raw event dictionary.
+            session: Session dictionary to link to.
+        """
         self.db.execute(
             "UPDATE raw_events SET session_id = ? WHERE event_id = ?",
             (session["id"], event["event_id"]),
         )
         self.db.commit()
 
-    # Recalculate duration metrics and update process sequence when adding event to session
-    def _update_session_on_event(self, session: dict, event: dict):
+    def _update_session_on_event(self, session: dict, event: dict) -> None:
+        """Recalculate duration metrics and update process sequence when adding event to session.
+
+        Args:
+            session: Session dictionary to update.
+            event: Event dictionary being added.
+        """
         event_count = (session.get("event_count") or 0) + 1
         screenshot_count = (session.get("screenshot_count") or 0) + (
             1 if event.get("event_type") == "screenshot" else 0
@@ -160,8 +198,12 @@ class SessionBuilder:
 
         self.session_repo.update(session["id"], updates)
 
-    # Transition status properties to closed if inactivity gap limits are reached
-    def _check_close(self, session: dict):
+    def _check_close(self, session: dict) -> None:
+        """Transition status to closed if inactivity gap limits are reached.
+
+        Args:
+            session: Session dictionary to check.
+        """
         if not session.get("end_time"):
             return
 
@@ -182,8 +224,12 @@ class SessionBuilder:
                 INACTIVITY_THRESHOLD,
             )
 
-    # Force change session status property to closed
-    def close_session(self, session_id: str):
+    def close_session(self, session_id: str) -> None:
+        """Force change session status to closed.
+
+        Args:
+            session_id: Identifier of session to close.
+        """
         session = self.session_repo.find_by_id(session_id)
         if not session:
             logger.warning("Session %s not found for close", session_id)
@@ -193,9 +239,16 @@ class SessionBuilder:
         self.session_repo.update(session_id, {"status": "closed"})
         logger.info("Session %s explicitly closed", session_id)
 
-    # Helper method converting string representations to UTC aware datetime instances
     @staticmethod
     def _parse_timestamp(ts: str) -> datetime:
+        """Convert string representations to UTC aware datetime instances.
+
+        Args:
+            ts: ISO format timestamp string.
+
+        Returns:
+            Timezone-aware datetime in UTC.
+        """
         try:
             dt = datetime.fromisoformat(ts)
             if dt.tzinfo is None:
@@ -205,8 +258,8 @@ class SessionBuilder:
             return datetime.now(timezone.utc)
 
 
-# Auxiliary utility function initiating a session reconstruction iteration
-def run_session_builder_once():
+def run_session_builder_once() -> None:
+    """Auxiliary utility function initiating a session reconstruction iteration."""
     db = Database()
     builder = SessionBuilder(db)
     builder.process_pending_events()
