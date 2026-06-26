@@ -10,8 +10,6 @@ venv/
 *.db
 *.db-shm
 *.db-wal
-frontend/
-
 # Node
 node_modules/
 
@@ -27,7 +25,7 @@ node_modules/
 .idea/
 
 # Build
-dashboard/dist/
+frontend/dist/
 
 # Local agent skills (private per-dev)
 .agents/

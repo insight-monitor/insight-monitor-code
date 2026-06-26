@@ -27,7 +27,7 @@ Synthetic tests (`scripts/test_e2e_gemini.py`) generate events **without real `i
 
 | Action | Minimum Threshold |
 |--------|-------------------|
-| Show in dashboard | 0.30 |
+| Show in frontend | 0.30 |
 | Alert friction | 0.60 |
 | Auto-categorize | 0.75 |
 | Train model | 0.80 |

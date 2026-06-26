@@ -15,7 +15,7 @@ cd insight-monitor-code
 cd backend && poetry install && cd ..
 
 # 3. Frontend dependencies
-cd dashboard && npm install && cd ..
+cd frontend && npm install && cd ..
 
 # 4. Run tests to verify setup
 cd backend && poetry run pytest -m unit -q
@@ -45,7 +45,7 @@ interfaces/       → Delivery mechanisms (FastAPI, Capture agent)
 | Infrastructure | `backend/infrastructure/` | SQLite repos, InMemory repos, DI container, Unit of Work |
 | Interfaces (HTTP) | `backend/routes/` | FastAPI routers (thin, DI only) |
 | Interfaces (CLI) | `capture/` | Capture agent (Python, HTTP to API) |
-| Frontend | `dashboard/` | React + TypeScript + Tailwind |
+| Frontend | `frontend/` | React + TypeScript + Tailwind |
 
 ### Forbidden Imports (CI Enforced)
 - `domain/` importing from `application/`, `infrastructure/`, `interfaces/`
@@ -158,7 +158,7 @@ poetry run pytest -m unit --tb=short -q
 
 **Quality Gates**:
 ```bash
-cd dashboard
+cd frontend
 npm run typecheck
 npm run lint
 npm run build

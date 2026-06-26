@@ -1,5 +1,5 @@
 """
-Simulate realistic BPO and Riwi sessions for dashboard development.
+Simulate realistic BPO and Riwi sessions for frontend development.
 
 Usage:
     python scripts/simulate_session.py
@@ -116,4 +116,4 @@ if __name__ == "__main__":
     print("\nSimulating Mixed Work + Personal session...")
     send_events(simulate_mixed())
 
-    print("\nDone. Check the dashboard.")
+    print("\nDone. Check the frontend.")

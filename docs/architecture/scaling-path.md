@@ -26,7 +26,7 @@ The backend follows Clean Architecture: Domain → Application → Infrastructur
 
 The three layers (Capture, API, Dashboard) communicate over HTTP. This means:
 - The capture agent can be replaced (e.g., Electron app with more UI) without touching backend
-- The dashboard can be swapped for a mobile app without changing inference
+- The frontend can be swapped for a mobile app without changing inference
 - Multiple capture agents can post to the same API instance (multi-device support)
 
 ### 3. Pydantic models as the schema contract
@@ -62,7 +62,7 @@ The inference prompt is built programmatically by `PromptBuilder`, not a standal
 |---|---|
 | Browser extension for full URLs | More accurate URL context than tab titles |
 | Multi-tenant isolation | Need to serve > 1 customer |
-| WebSocket-based real-time updates | Better dashboard experience |
+| WebSocket-based real-time updates | Better frontend experience |
 | Confidence model refinement | Calibrate confidence scores against user feedback |
 
 ### Medium-term (Months 2-3)
@@ -92,7 +92,7 @@ The Clean Architecture migration (ARCH-0) addressed several anti-patterns. What 
 |---|---|---|
 | SQLite | PostgreSQL or SQLite with replication | Multi-user or multi-instance deployment |
 | Gemini Flash | Domain-fine-tuned model or smaller local model | Inference volume or privacy requirements grow |
-| HTTP polling | WebSocket | Real-time dashboard adopted by supervisors |
+| HTTP polling | WebSocket | Real-time frontend adopted by supervisors |
 | Single process FastAPI | Docker Compose + multiple services | Need to scale API, inference, and storage independently |
 | CLI agent startup | Systemd service / Windows service | Agent must survive reboots and user logouts |
 | Pipeline modules (`pipeline/`) | Full migration to use case classes | As each pipeline function is absorbed by a use case |

@@ -12,6 +12,7 @@ from backend.config import settings
 from backend.routes.health import router as health_router
 from backend.routes.events import router as events_router
 from backend.routes.sessions import router as sessions_router
+from backend.routes.auth import router as auth_router
 from backend.infrastructure.di import (
     get_build_sessions_use_case,
     get_infer_intent_use_case,
@@ -101,3 +102,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(events_router)
 app.include_router(sessions_router)
+app.include_router(auth_router)

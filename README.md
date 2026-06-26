@@ -65,7 +65,7 @@ npm --version       # >= 9
 
 ```bash
 cd backend && poetry install && cd ..
-cd dashboard && npm install && cd ..
+cd frontend && npm install && cd ..
 npm install
 ```
 
@@ -113,7 +113,7 @@ npm run simulate    # Sends simulated Riwi/BPO events to the API
 │   ├── pyproject.toml
 │   └── data/             SQLite database (gitignored)
 │
-├── dashboard/            Layer 3 — Frontend (React + TypeScript + Vite + TailwindCSS)
+├── frontend/            Layer 3 — Frontend (React + TypeScript + Vite + TailwindCSS)
 │   ├── src/
 │   │   ├── App.tsx       Main component
 │   │   ├── main.tsx      Entry point
@@ -151,13 +151,13 @@ Full interactive docs at `http://localhost:8002/docs`.
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start backend + dashboard in one terminal |
+| `npm run dev` | Start backend + frontend in one terminal |
 | `npm run backend` | Start backend only |
-| `npm run dashboard:dev` | Start dashboard only |
+| `npm run frontend:dev` | Start frontend only |
 | `npm run seed` | Load test sessions into SQLite |
 | `npm run simulate` | Simulate Riwi/BPO activity events |
 | `npm run capture` | Start the capture agent (screenshots + input monitor) |
-| `npm run dashboard:build` | Production build of dashboard |
+| `npm run frontend:build` | Production build of frontend |
 
 ---
 
@@ -173,7 +173,7 @@ Files: `backend/`. Includes Clean Architecture layers (Domain, Application, Infr
 Files: `backend/pipeline/` + `backend/services/`. Includes `LLMService` (Gemini API client), `PromptBuilder` (system prompt assembly), `IntentParser` (LLM JSON response parsing), and `InferIntentUseCase` orchestrating all three.
 
 ### Frontend (React + TypeScript + Tailwind) — Live health indicator + session list
-Files: `dashboard/`. Shows live backend status, session table (status, duration, events, apps). Next: detail view, confidence badges, timeline.
+Files: `frontend/`. Shows live backend status, session table (status, duration, events, apps). Next: detail view, confidence badges, timeline.
 
 ---
 

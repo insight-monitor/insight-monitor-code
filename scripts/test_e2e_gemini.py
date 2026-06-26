@@ -254,7 +254,7 @@ def main():
         else:
             print(f"  {name}: FAILED")
 
-    print(f"\nDone. Check dashboard at {API_URL.replace('8000', '5173')}")
+    print(f"\nDone. Check frontend at {API_URL.replace('8000', '5173')}")
 
 
 if __name__ == "__main__":

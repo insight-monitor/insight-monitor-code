@@ -1,5 +1,5 @@
 """
-Populate SQLite with sample sessions for dashboard development.
+Populate SQLite with sample sessions for frontend development.
 
 Usage:
     python scripts/seed_db.py

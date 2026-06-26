@@ -27,7 +27,7 @@ frontend/
 │   ├── pages/
 │   │   ├── login.js             # Login form
 │   │   ├── register.js          # Registration form
-│   │   ├── dashboard.js         # Stats cards, recent tickets
+│   │   ├── frontend.js         # Stats cards, recent tickets
 │   │   ├── tickets.js           # Filterable/sortable ticket list
 │   │   ├── ticket-detail.js     # Ticket detail with comments
 │   │   └── create-ticket.js     # Create/edit ticket form

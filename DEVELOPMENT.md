@@ -28,7 +28,7 @@ poetry run python ../scripts/seed_db.py
 
 ### Frontend
 ```bash
-cd dashboard
+cd frontend
 
 # Install deps
 npm install
@@ -86,7 +86,7 @@ insight-monitor-code/
 │   ├── tests/                # Unit + integration tests
 │   └── pyproject.toml
 ├── capture/                  # Capture agent (Python)
-├── dashboard/                # React + TS + Tailwind
+├── frontend/                # React + TS + Tailwind
 ├── scripts/                  # Utility scripts
 ├── tests/                    # E2E tests
 ├── CONTRIBUTING.md           # Full contribution guide
@@ -105,14 +105,14 @@ cd backend && poetry run pytest -m unit -q
 cd backend && poetry run pytest -m integration -q
 
 # Frontend type check
-cd dashboard && npm run typecheck
+cd frontend && npm run typecheck
 
 # Frontend lint
-cd dashboard && npm run lint
+cd frontend && npm run lint
 
 # All quality gates
 cd backend && poetry run mypy --strict . && poetry run ruff check .
-cd dashboard && npm run typecheck && npm run lint
+cd frontend && npm run typecheck && npm run lint
 ```
 
 ---
@@ -199,7 +199,7 @@ SESSION_BUILDER_POLL_SECONDS=30
 ### Types Out of Sync?
 ```bash
 npm run generate:types
-# Check dashboard/src/api/generated-types.ts
+# Check frontend/src/api/generated-types.ts
 ```
 
 ### Capture Agent Not Sending?

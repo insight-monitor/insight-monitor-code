@@ -106,7 +106,7 @@ insight-monitor/
 │   ├── poetry.lock
 │   └── data/                   # SQLite database (gitignored)
 │
-├── dashboard/                  # Layer 3 — Frontend
+├── frontend/                  # Layer 3 — Frontend
 │   ├── src/
 │   │   ├── App.tsx             # Main component
 │   │   ├── main.tsx            # Entry point

@@ -50,4 +50,4 @@ All inference outputs at any confidence level must include:
 When confidence falls below the configurable threshold for a given classification:
 - The system defaults to **"ambiguous"** — not "unproductive" or "distraction"
 - The ambiguous classification is logged with the evidence and the reason for low confidence
-- Downstream dashboards must display the uncertainty visually (e.g., a grey badge, not red/green)
+- Downstream frontends must display the uncertainty visually (e.g., a grey badge, not red/green)

@@ -18,7 +18,7 @@ poetry install
 cd ..
 
 # Dashboard
-cd dashboard
+cd frontend
 npm install
 cd ..
 
@@ -49,9 +49,9 @@ npm run simulate    # Sends simulated Riwi/BPO events to the API
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start backend + dashboard in one terminal |
+| `npm run dev` | Start backend + frontend in one terminal |
 | `npm run backend` | Start backend only |
-| `npm run dashboard:dev` | Start dashboard only |
+| `npm run frontend:dev` | Start frontend only |
 | `npm run seed` | Load test sessions into SQLite |
 | `npm run simulate` | Simulate Riwi/BPO activity events |
-| `npm run dashboard:build` | Production build of dashboard |
+| `npm run frontend:build` | Production build of frontend |
