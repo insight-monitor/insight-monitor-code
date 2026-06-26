@@ -3,14 +3,15 @@
 ## Common Commands
 
 ### Backend
+
 ```bash
 cd backend
 
 # Install deps
 poetry install
 
-# Run server
-poetry run uvicorn backend.main:app --reload --port 8000
+# Run server (port 8002 per run-backend.sh)
+poetry run uvicorn backend.main:app --reload --port 8002
 
 # Tests
 poetry run pytest -m unit -v          # Unit tests only (<2s)
@@ -27,6 +28,7 @@ poetry run python ../scripts/seed_db.py
 ```
 
 ### Frontend
+
 ```bash
 cd dashboard
 
@@ -48,6 +50,7 @@ npm run generate:types
 ```
 
 ### Root
+
 ```bash
 # Generate types (ARCH-9)
 npm run generate:types
@@ -55,6 +58,20 @@ npm run generate:types
 # Run all (needs concurrently)
 npm run dev
 ```
+
+---
+
+## Run Modes Quick Ref
+
+| Mode | Command | What Runs | Port(s) |
+|------|---------|-----------|---------|
+| Full stack (dev) | `npm run dev` | Backend + Dashboard | 8002, 5173 |
+| Backend only | `npm run backend` | FastAPI + auto-reload | 8002 |
+| Frontend only | `npm run dashboard:dev` | Vite dev server | 5173 |
+| Capture agent | `npm run capture` | Python agent → API | — |
+| Seed test data | `npm run seed` | SQLite ← sample sessions | — |
+| Simulate events | `npm run simulate` | HTTP → API → SQLite | — |
+| DB viewer | `cd infrastructure/db-mvp && docker compose up -d` | sqlite-web | 8081 |
 
 ---
 
@@ -86,9 +103,10 @@ insight-monitor-code/
 │   ├── tests/                # Unit + integration tests
 │   └── pyproject.toml
 ├── capture/                  # Capture agent (Python)
-├── dashboard/                # React + TS + Tailwind
+├── dashboard/                # React + TS + Tailwind (CURRENT frontend)
 ├── scripts/                  # Utility scripts
 ├── tests/                    # E2E tests
+├── frontend/                 # ⚠️ LEGACY — AI Support Desk (Vanilla JS, NOT Insight Monitor)
 ├── CONTRIBUTING.md           # Full contribution guide
 └── README.md
 ```
@@ -175,6 +193,7 @@ git rebase origin/develop
 ## Environment Variables
 
 Create `.env` in `backend/` (copy from `.env.example`):
+
 ```bash
 GEMINI_API_KEY=your-key
 INSIGHT_DB_PATH=./data/insight_monitor.db
@@ -184,11 +203,17 @@ SESSION_BUILDER_POLL_SECONDS=30
 
 ---
 
+## Database (SQLite) — Auto-Created
+
+The database file `backend/data/insight_monitor.db` is **auto-created** when the backend starts for the first time (via `Database._init_schema()`). No separate DB server needed. The `infrastructure/db-mvp/` docker-compose starts **sqlite-web** (viewer at :8081), not a database server.
+
+---
+
 ## Debugging Tips
 
 ### Backend Not Starting?
 - Check `GEMINI_API_KEY` is set (or inference disabled)
-- Check port 8000 not in use
+- Check port **8002** not in use
 - Check SQLite DB path writable
 
 ### Tests Failing?
@@ -206,6 +231,17 @@ npm run generate:types
 - Check `API_URL` env var (default: http://localhost:8002)
 - Check backend health: `curl http://localhost:8002/health`
 - Check X11 display: `xdotool getactivewindow`
+
+---
+
+## Real-Time Monitoring Visibility Quick Ref
+
+| Interface | URL / Command | Key Visibility |
+|-----------|---------------|----------------|
+| Dashboard | `http://localhost:5173` | Agent status, sessions table (type, goal, confidence), 10s poll |
+| Capture Agent | `npm run capture` | Events sent (window_focus, screenshot, input_activity) every 5s |
+| Backend | `npm run backend` | Uvicorn access logs, background task cycles |
+| sqlite-web | `http://localhost:8081` | Raw tables: `raw_events`, `sessions`, `intent_records` |
 
 ---
 
