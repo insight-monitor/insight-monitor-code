@@ -1,4 +1,7 @@
 """Tests for the /health endpoint."""
+import pytest
+
+pytestmark = pytest.mark.unit
 
 
 class TestHealth:
