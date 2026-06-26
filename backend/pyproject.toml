@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Insight Monitor Backend API"
 authors = ["Insight Monitor"]
 readme = "README.md"
-packages = [{include = "backend"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11"
@@ -18,6 +17,9 @@ pillow = ">=11.0.0"
 httpx = ">=0.28.0"
 mss = ">=10.0.0"
 pynput = ">=1.7.0"
+
+[tool.poetry.packages]
+include = [{ from = ".", include = "." }]
 
 [tool.poetry.group.dev.dependencies]
 ruff = "*"
