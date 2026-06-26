@@ -1,39 +1,39 @@
-# Modelo de Confianza (Confidence Score)
+# Confidence Model (Confidence Score)
 
-## Rangos
+## Ranges
 
-| Rango | Etiqueta | Interpretación |
-|-------|----------|----------------|
-| 0.00 – 0.30 | `ambiguous` | Sin señales claras; fallback por defecto |
-| 0.30 – 0.60 | `ambiguous` | Hipótesis débil; evidencia parcial |
-| 0.60 – 0.80 | `moderate` | Señales consistentes; intención probable |
-| 0.80 – 1.00 | `high` | Evidencia fuerte; intención clara |
+| Range | Label | Interpretation |
+|-------|-------|----------------|
+| 0.00 – 0.30 | `ambiguous` | No clear signals; default fallback |
+| 0.30 – 0.60 | `ambiguous` | Weak hypothesis; partial evidence |
+| 0.60 – 0.80 | `moderate` | Consistent signals; probable intent |
+| 0.80 – 1.00 | `high` | Strong evidence; clear intent |
 
-## Scores por componente
+## Scores by Component
 
-- `goal_confidence`: Qué tan seguro está el LLM del objetivo textual
-- `category_confidence`: Certidumbre de la categoría (`skill_development`, `applied_learning`, etc.)
-- `friction_confidence`: Confianza en puntos de fricción detectados (puede ser `null`)
+- `goal_confidence`: How confident the LLM is about the textual goal
+- `category_confidence`: Certainty of the category (`skill_development`, `applied_learning`, etc.)
+- `friction_confidence`: Confidence in detected friction points (can be `null`)
 
-## Comportamiento en tests E2E
+## Behavior in E2E Tests
 
-Tests sintéticos (`scripts/test_e2e_gemini.py`) generan eventos **sin `input_activity` real** → el LLM ve solo `window_focus` y `screenshot` → confianzas 0.30–0.50 (`ambiguous`).
+Synthetic tests (`scripts/test_e2e_gemini.py`) generate events **without real `input_activity`** → the LLM sees only `window_focus` and `screenshot` → confidences 0.30–0.50 (`ambiguous`).
 
-**En producción** con capture agent real (keystrokes, clicks, scrolls):
-- `input_activity` presente → `goal_confidence` típico 0.7–0.9
-- `category_confidence` típico 0.75–0.95
+**In production** with real capture agent (keystrokes, clicks, scrolls):
+- `input_activity` present → typical `goal_confidence` 0.7–0.9
+- typical `category_confidence` 0.75–0.95
 
-## Umbrales recomendados
+## Recommended Thresholds
 
-| Acción | Umbral mínimo |
-|--------|---------------|
-| Mostrar en dashboard | 0.30 |
-| Alertar fricción | 0.60 |
-| Auto-categorizar | 0.75 |
-| Entrenar modelo | 0.80 |
+| Action | Minimum Threshold |
+|--------|-------------------|
+| Show in dashboard | 0.30 |
+| Alert friction | 0.60 |
+| Auto-categorize | 0.75 |
+| Train model | 0.80 |
 
-## Notas de implementación
+## Implementation Notes
 
-- `PromptBuilder` inyecta rangos en `SYSTEM_INSTRUCTION` para calibrar al LLM
-- `IntentParser` valida que scores estén en [0, 1]
-- Valores `null` = "no evaluado" (distinto de 0.0)
+- `PromptBuilder` injects ranges into `SYSTEM_INSTRUCTION` to calibrate the LLM
+- `IntentParser` validates that scores are in [0, 1]
+- `null` values = "not evaluated" (different from 0.0)

@@ -1,21 +1,21 @@
-# Migración Gemini → OpenAI
+# Gemini → OpenAI Migration
 
-## Resumen
-El proveedor LLM por defecto cambió de **Gemini** (`gemini-2.0-flash`) a **OpenAI** (`gpt-4o-mini`) para mejorar estabilidad, latencia y costo.
+## Summary
+The default LLM provider changed from **Gemini** (`gemini-2.0-flash`) to **OpenAI** (`gpt-4o-mini`) to improve stability, latency, and cost.
 
 ---
 
-## Cambios en configuración
+## Configuration Changes
 
-### Variables de entorno (`.env`)
+### Environment Variables (`.env`)
 
-| Antigua | Nueva | Descripción |
-|---------|-------|-------------|
-| `GEMINI_API_KEY` | `API_KEY` | API key del proveedor seleccionado |
-| `GEMINI_MODEL` | `LLM_MODEL` | Nombre del modelo (`gpt-4o-mini`, `gemini-2.0-flash`, etc.) |
+| Old | New | Description |
+|-----|-----|-------------|
+| `GEMINI_API_KEY` | `API_KEY` | API key of the selected provider |
+| `GEMINI_MODEL` | `LLM_MODEL` | Model name (`gpt-4o-mini`, `gemini-2.0-flash`, etc.) |
 | — | `LLM_PROVIDER` | `openai` \| `gemini` (default: `openai`) |
 
-**Ejemplo `.env`:**
+**Example `.env`:**
 ```env
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
@@ -24,22 +24,22 @@ API_KEY=sk-proj-xxxxxxxxxxxxx
 
 ---
 
-## Cambios en código
+## Code Changes
 
 ### `backend/config.py`
 ```python
-# Antes
+# Before
 gemini_api_key: str
 gemini_model: str = "gemini-2.0-flash"
 
-# Ahora
+# Now
 api_key: str
 llm_model: str = "gpt-4o-mini"
 llm_provider: str = "openai"
 ```
 
 ### `backend/services/llm_service.py`
-Nuevo `LLMService` con factory:
+New `LLMService` with factory:
 ```python
 def __init__(self, provider: str | None = None, model: str | None = None, api_key: str | None = None):
     self.provider = provider or settings.llm_provider
@@ -54,40 +54,40 @@ def _create_client(self):
     elif self.provider == "gemini":
         from google import genai
         return genai.Client(api_key=self.api_key)
-    raise ValueError(f"Proveedor no soportado: {self.provider}")
+    raise ValueError(f"Unsupported provider: {self.provider}")
 ```
 
-Método unificado `generate_structured(prompt)` que maneja ambos SDKs.
+Unified `generate_structured(prompt)` method that handles both SDKs.
 
 ---
 
-## Pasos para migrar
+## Migration Steps
 
-1. **Obtener API key de OpenAI**
-   - Crear cuenta en https://platform.openai.com
-   - Generar API key en Settings → API Keys
+1. **Get OpenAI API Key**
+   - Create account at https://platform.openai.com
+   - Generate API key in Settings → API Keys
 
-2. **Actualizar `.env`**
+2. **Update `.env`**
    ```bash
    cp backend/.env.example backend/.env
-   # Editar con tus valores
+   # Edit with your values
    ```
 
-3. **Instalar dependencia**
+3. **Install Dependency**
    ```bash
    cd backend
-   poetry install  # openai>=1.0.0 ya está en pyproject.toml
+   poetry install  # openai>=1.0.0 already in pyproject.toml
    ```
 
-4. **Verificar**
+4. **Verify**
    ```bash
    poetry run python scripts/test_e2e_gemini.py
-   # Debe mostrar: "Provider: openai, Model: gpt-4o-mini"
+   # Should show: "Provider: openai, Model: gpt-4o-mini"
    ```
 
 ---
 
-## Rollback a Gemini (si necesario)
+## Rollback to Gemini (if needed)
 
 ```env
 LLM_PROVIDER=gemini
@@ -95,11 +95,11 @@ LLM_MODEL=gemini-2.0-flash
 API_KEY=your-gemini-api-key
 ```
 
-El código soporta ambos proveedores simultáneamente.
+The code supports both providers simultaneously.
 
 ---
 
-## Notas
-- `gpt-4o-mini` es ~10x más barato que `gpt-4o` y suficiente para clasificación de intención
-- Confianza típica en tests E2E: 0.30–0.50 (`ambiguous`) por ausencia de `input_activity` en datos sintéticos
-- Para producción, asegurar `input_activity` real del capture agent para subir confianza > 0.7
+## Notes
+- `gpt-4o-mini` is ~10x cheaper than `gpt-4o` and sufficient for intent classification
+- Typical confidence in E2E tests: 0.30–0.50 (`ambiguous`) due to lack of `input_activity` in synthetic data
+- For production, ensure real `input_activity` from capture agent to raise confidence > 0.7
