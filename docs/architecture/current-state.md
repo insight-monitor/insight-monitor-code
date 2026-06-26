@@ -58,17 +58,16 @@ backend/
 | **ARCH-6** | Done | DI Composition Root in `infrastructure/di.py` |
 | **ARCH-7** | Done | Unit of Work transaction boundaries in `infrastructure/db/sqlite/unit_of_work.py` |
 | **ARCH-8** | Done | Capture agent resilience: buffer, retry with backoff, graceful shutdown |
-| **ARCH-9** | **Not started** | TypeScript type generation from Pydantic still manual |
-| **ARCH-10** | Partial | This document and related updates address the gap |
+| **ARCH-9** | Done | TypeScript types auto-generated from Pydantic via `scripts/generate_types.py`; run `npm run generate:types` |
+| **ARCH-10** | Done | This document, ADRs, and related docs updated |
 | **ARCH-11** | Done | Unit tests with InMemory repos; `pytest -m unit` in < 2s |
 
 ## Remaining Technical Debt
 
-1. **ARCH-9 (TypeScript sync)**: Frontend types are still manually copied from Pydantic models. No generation script in place.
-2. **Legacy pipeline modules**: `backend/pipeline/` still exists as a transitional directory. Some logic duplicates what use cases do. Eventually the use cases should fully absorb pipeline responsibilities.
-3. **No ADR process**: Architecture decisions were made during PR #43 without formal ADR records. This is being addressed in this update.
-4. **Inference pipeline v0.1**: The `InferIntentUseCase` and LLM service exist but haven't been battle-tested with real Gemini traffic.
-5. **Test coverage**: Only unit tests for use cases exist. Integration tests for SQLite and E2E tests are minimal.
+1. **Legacy pipeline modules**: `backend/pipeline/` still exists as a transitional directory. Some logic duplicates what use cases do. Eventually the use cases should fully absorb pipeline responsibilities.
+2. **No ADR process**: Architecture decisions were made during PR #43 without formal ADR records. This is being addressed in this update.
+3. **Inference pipeline v0.1**: The `InferIntentUseCase` and LLM service exist but haven't been battle-tested with real Gemini traffic.
+4. **Test coverage**: Only unit tests for use cases exist. Integration tests for SQLite and E2E tests are minimal.
 
 ## Target Architecture
 
@@ -90,4 +89,4 @@ Every new feature = new Use Case class. No modifications to existing pipeline mo
 | Integration test speed | ~30 seconds |
 | Code coupling | Zero infra imports in domain/application |
 | Capture agent resilience | Buffer 500 events, retry 1s→2s→4s |
-| Documented ADRs | 0 (being addressed) |
+| Documented ADRs | 5 (ADR-0001 through ADR-0005) |

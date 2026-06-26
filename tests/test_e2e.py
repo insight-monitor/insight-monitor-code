@@ -1,5 +1,6 @@
 """End-to-end test: Capture → API → store → retrieve → display."""
-from unittest.mock import MagicMock, patch
+import pytest
+from unittest.mock import MagicMock
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,7 @@ from backend.infrastructure.db.sqlite.database import Database
 from backend.infrastructure.db.sqlite.repositories import EventRepository, SessionRepository, IntentRepository
 
 
+@pytest.mark.integration
 def test_e2e_session_flow(tmp_path, monkeypatch):
     """Test full flow: create session → send events → close → inference → retrieve."""
     db_path = str(tmp_path / "test_e2e.db")
@@ -69,7 +71,7 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
             })
             assert resp.status_code == 200, f"Failed to post event: {resp.text}"
 
-        get_resp = client.get(f"/events?limit=10")
+        get_resp = client.get("/events?limit=10")
         assert get_resp.status_code == 200
         assert len(get_resp.json()["events"]) >= 3
 
