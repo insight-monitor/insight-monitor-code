@@ -8,7 +8,10 @@
 - **Async**: Use `async/await` for I/O. Background tasks in `main.py` lifespan.
 - **No Globals**: No module-level singletons. Use DI container.
 - **Error Handling**: Custom exceptions per module. No bare `except:`.
-- **Docstrings**: Google style for public APIs. Private methods: inline comments if complex.
+- **Docstrings**: Google style for public APIs (classes, functions, methods).
+- **Module Docstrings**: Required at top of every file — one sentence describing purpose and key exports.
+- **Private Methods**: Docstring only if logic is non-obvious; prefer self-documenting names.
+- **Inline Comments**: Rare. Explain *why* (constraints, business rules), not *what*.
 
 ## TypeScript (Frontend)
 - **Strict Mode**: `tsconfig.json` strict: true
@@ -17,6 +20,66 @@
 - **Types**: Generated from Pydantic (ARCH-9). Never manual sync.
 - **Components**: Functional + hooks. No class components.
 - **State**: `react-query` (server), `zustand` (client UI only)
+- **Doc Comments**: TSDoc for public APIs (functions, classes, interfaces, types).
+- **Module Comments**: One-line file header describing purpose.
+- **Inline Comments**: Minimal. Prefer clear naming and type signatures.
+
+## Commenting Principles (Both Languages)
+- **Self-documenting code > comments** — rename before commenting.
+- **Comment *why*, not *what*** — explain intent, constraints, edge cases.
+- **No redundant comments** — if code reads like English, don't annotate it.
+- **Examples belong in tests**, not signatures.
+
+### Examples
+
+```python
+# Good: module docstring
+"""Intent classification pipeline for user activity sessions."""
+
+# Good: public API docstring
+def classify_intent(events: list[RawEvent], context: SessionContext) -> IntentRecord:
+    """Classify user intent from a sequence of raw events.
+
+    Args:
+        events: Chronological raw events within a session window.
+        context: Aggregated session metadata (duration, app switches, etc.).
+
+    Returns:
+        Structured intent record with confidence and reasoning.
+
+    Raises:
+        ClassificationError: If LLM response is malformed or low confidence.
+    """
+    ...
+
+# Bad: redundant inline comment
+events = events.filter(e => e.timestamp > cutoff)  # filter old events
+
+# Good: explains business constraint
+# Keep only events within the active session window (30min inactivity timeout)
+events = events.filter(e => e.timestamp > cutoff)
+```
+
+```typescript
+// Good: module header
+/** Intent inference pipeline — orchestrates LLM classification and session building. */
+
+// Good: TSDoc for public API
+/**
+ * Classifies user intent from a sequence of raw events.
+ * @param events - Chronological raw events within a session window
+ * @param context - Aggregated session metadata
+ * @returns Structured intent record with confidence and reasoning
+ * @throws ClassificationError if LLM response is malformed or low confidence
+ */
+export async function classifyIntent(
+  events: RawEvent[],
+  context: SessionContext
+): Promise<IntentRecord> { ... }
+
+// Bad: redundant comment
+const filtered = events.filter(e => e.timestamp > cutoff); // filter old events
+```
 
 ## Git Conventions
 - **Branch**: `refactor/arch-X-description` | `feat/description` | `fix/description` | `docs/description`
