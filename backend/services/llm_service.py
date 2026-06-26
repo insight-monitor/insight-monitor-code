@@ -1,9 +1,4 @@
-"""LLM service orchestrating prompt completion requests with retry logic.
-
-Exports:
-    LLMService: Coordinates LLM API calls with provider abstraction.
-    LLMServiceError: Exception raised when LLM call fails or returns invalid output.
-"""
+"""LLM service orchestrating prompt completion requests with retry logic."""
 
 import json
 import logging
@@ -39,13 +34,12 @@ class LLMService:
         timeout_sec: int | None = None,
         max_retries: int | None = None,
     ):
-        # Read default parameters from configuration or accept custom overrides
         self.provider = (provider or settings.llm_provider).lower()
         self.api_key = api_key or settings.api_key
         self.model = model or settings.llm_model
         self.timeout_sec = timeout_sec or settings.inference_timeout_sec
         self.max_retries = max_retries or settings.inference_max_retries
-        self._client: Any = None  # Lazily instantiated client object reference
+        self._client: Any = None
 
     def _get_client(self) -> Any:
         """Instantiate and cache the API client based on chosen LLM provider.
@@ -121,7 +115,7 @@ class LLMService:
                     attempt, self.max_retries, e,
                 )
                 if attempt < self.max_retries:
-                    time.sleep(2 ** attempt)  # Wait with exponential backoff: 2s, 4s, 8s...
+                    time.sleep(2 ** attempt)
 
         raise LLMServiceError(
             f"LLM call failed after {self.max_retries} attempts: {last_error}"

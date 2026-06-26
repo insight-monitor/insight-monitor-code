@@ -1,15 +1,8 @@
-"""Prompt builder for LLM intent classification pipeline.
-
-Exports:
-    PromptBuilder: Constructs structured prompts for session classification.
-    SYSTEM_INSTRUCTION: System prompt defining classification logic.
-    OUTPUT_SCHEMA: Expected JSON schema for LLM responses.
-"""
+"""Prompt builder for LLM intent classification pipeline."""
 
 import json
 
 
-# System instructions to configure the classification logic of the LLM
 SYSTEM_INSTRUCTION = """You are an impartial activity analyst. Your task is to analyze work/study sessions and classify them into the structured JSON output described below.
 
 SESSION TYPE (the primary classification):
@@ -67,7 +60,6 @@ CONTEXTUAL DISAMBIGUATION:
 - Always evaluate the full pattern of signals, not any single app in isolation."""
 
 
-# Expected JSON schema for the LLM structured response
 OUTPUT_SCHEMA = {
     "type": "object",
     "properties": {
@@ -111,26 +103,13 @@ OUTPUT_SCHEMA = {
 
 
 class PromptBuilder:
-    """Builder class that structures the prompt layout sent to the LLM."""
+    """Builds structured prompts for session classification."""
 
     def __init__(self, user_context: dict | None = None):
-        """Initialize with optional user context.
-
-        Args:
-            user_context: Optional user preferences and roles context dict.
-        """
         self.user_context = user_context or {}
 
     def build(self, session: dict, events: list[dict]) -> str:
-        """Construct the final prompt text from system instruction, environmental data, and output schema.
-
-        Args:
-            session: Session metadata dictionary.
-            events: List of event dictionaries for the session.
-
-        Returns:
-            Formatted prompt string ready for LLM consumption.
-        """
+        """Construct the final prompt from system instruction, environmental data, and output schema."""
         env_context = self._build_environmental_context(session, events)
         user_ctx = self._build_user_context()
 
@@ -151,15 +130,7 @@ class PromptBuilder:
         return "\n".join(parts)
 
     def _build_environmental_context(self, session: dict, events: list[dict]) -> str:
-        """Format session metrics and recent events as a plain text block.
-
-        Args:
-            session: Session metadata dictionary.
-            events: List of event dictionaries for the session.
-
-        Returns:
-            Formatted environmental context string.
-        """
+        """Format session metrics and recent events as plain text."""
         lines = []
         lines.append(f"Session ID: {session.get('id', 'unknown')}")
         lines.append(f"Start time: {session.get('start_time', 'unknown')}")
@@ -195,11 +166,7 @@ class PromptBuilder:
         return "\n".join(lines)
 
     def _build_user_context(self) -> str:
-        """Serialize user context dictionary entries to markdown list format.
-
-        Returns:
-            Formatted user context string, or empty string if no context.
-        """
+        """Serialize user context dictionary to markdown list format."""
         if not self.user_context:
             return ""
         lines = []

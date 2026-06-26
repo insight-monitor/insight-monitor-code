@@ -16,9 +16,7 @@ from backend.infrastructure.db.sqlite.repositories import EventRepository, Sessi
 
 logger = logging.getLogger(__name__)
 
-# Allowed time interval in minutes before an inactive session gets automatically closed
 INACTIVITY_THRESHOLD = int(os.getenv("INACTIVITY_THRESHOLD_MINUTES", "8"))
-# Delay in seconds between checking for newly generated activity events
 POLL_INTERVAL = int(os.getenv("SESSION_BUILDER_POLL_SECONDS", "30"))
 
 
@@ -26,11 +24,6 @@ class SessionBuilder:
     """Builder class grouping raw tracked events into sequential workspace sessions."""
 
     def __init__(self, db: Database):
-        """Initialize with database connection and repositories.
-
-        Args:
-            db: Database connection instance.
-        """
         self.db = db
         self.event_repo = EventRepository(db)
         self.session_repo = SessionRepository(db)
@@ -74,22 +67,13 @@ class SessionBuilder:
                     self.session_repo.find_by_id(session_id)
                 )
 
-        # Check inactivity state for all currently open sessions
         for session in open_sessions:
             self._check_close(session)
 
     def _find_session_for_event(
         self, event: dict, open_sessions: list[dict]
     ) -> dict | None:
-        """Evaluate whether a pending event occurred close enough to belong to an open session.
-
-        Args:
-            event: Raw event dictionary.
-            open_sessions: List of open session dictionaries.
-
-        Returns:
-            Matching session dictionary or None if no match found.
-        """
+        """Evaluate whether a pending event occurred close enough to belong to an open session."""
         event_ts = self._parse_timestamp(event["timestamp"])
 
         for session in open_sessions:
@@ -108,14 +92,7 @@ class SessionBuilder:
         return None
 
     def _create_session(self, first_event: dict) -> str:
-        """Instantiate a new empty session entry in the database tables.
-
-        Args:
-            first_event: The first event that triggers session creation.
-
-        Returns:
-            New session ID string.
-        """
+        """Instantiate a new empty session entry in the database tables."""
         session_id = str(uuid4())
         session = {
             "id": session_id,
@@ -138,12 +115,7 @@ class SessionBuilder:
         return session_id
 
     def _assign_event(self, event: dict, session: dict) -> None:
-        """Update event record foreign key to link it to session.
-
-        Args:
-            event: Raw event dictionary.
-            session: Session dictionary to link to.
-        """
+        """Update event record foreign key to link it to session."""
         self.db.execute(
             "UPDATE raw_events SET session_id = ? WHERE event_id = ?",
             (session["id"], event["event_id"]),
@@ -151,12 +123,7 @@ class SessionBuilder:
         self.db.commit()
 
     def _update_session_on_event(self, session: dict, event: dict) -> None:
-        """Recalculate duration metrics and update process sequence when adding event to session.
-
-        Args:
-            session: Session dictionary to update.
-            event: Event dictionary being added.
-        """
+        """Recalculate duration metrics and update process sequence when adding event to session."""
         event_count = (session.get("event_count") or 0) + 1
         screenshot_count = (session.get("screenshot_count") or 0) + (
             1 if event.get("event_type") == "screenshot" else 0
@@ -191,7 +158,6 @@ class SessionBuilder:
             "active_apps": active_apps,
         }
 
-        # Handle explicit session end request boundary signals
         if event.get("event_type") == "session_boundary" and event.get("session_boundary_type") == "close":
             updates["status"] = "closed"
             logger.info("Session %s closed by boundary event", session["id"])
@@ -199,11 +165,7 @@ class SessionBuilder:
         self.session_repo.update(session["id"], updates)
 
     def _check_close(self, session: dict) -> None:
-        """Transition status to closed if inactivity gap limits are reached.
-
-        Args:
-            session: Session dictionary to check.
-        """
+        """Transition status to closed if inactivity gap limits are reached."""
         if not session.get("end_time"):
             return
 
@@ -225,11 +187,7 @@ class SessionBuilder:
             )
 
     def close_session(self, session_id: str) -> None:
-        """Force change session status to closed.
-
-        Args:
-            session_id: Identifier of session to close.
-        """
+        """Force change session status to closed."""
         session = self.session_repo.find_by_id(session_id)
         if not session:
             logger.warning("Session %s not found for close", session_id)
@@ -241,14 +199,7 @@ class SessionBuilder:
 
     @staticmethod
     def _parse_timestamp(ts: str) -> datetime:
-        """Convert string representations to UTC aware datetime instances.
-
-        Args:
-            ts: ISO format timestamp string.
-
-        Returns:
-            Timezone-aware datetime in UTC.
-        """
+        """Convert string representations to UTC aware datetime instances."""
         try:
             dt = datetime.fromisoformat(ts)
             if dt.tzinfo is None:

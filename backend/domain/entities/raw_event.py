@@ -1,9 +1,4 @@
-"""Raw event domain entity and event type enumeration.
-
-Exports:
-    EventType: Enumeration of captured event categories.
-    RawEvent: Immutable event record from the monitoring agent.
-"""
+"""Raw event domain entity and event type enumeration."""
 
 from enum import Enum
 from pydantic import BaseModel
@@ -12,7 +7,6 @@ from datetime import datetime
 
 class EventType(str, Enum):
     """Enumeration of valid event types captured by the monitor agent."""
-
     WINDOW_FOCUS = "window_focus"
     SCREENSHOT = "screenshot"
     INPUT_ACTIVITY = "input_activity"
@@ -21,26 +15,7 @@ class EventType(str, Enum):
 
 
 class RawEvent(BaseModel):
-    """Immutable raw event captured from the user's environment.
-
-    Attributes:
-        event_id: Unique identifier of the event (UUID).
-        event_type: Classification type of the captured event.
-        timestamp: UTC timestamp when the event occurred.
-        source: Collector module source identifier.
-        window_title: Title text of the active focused window.
-        process_name: Name of the active process executable (e.g., code.exe).
-        pid: OS process ID of the active window.
-        screenshot_path: Absolute file path to the full screenshot image.
-        screenshot_thumbnail: File path to the generated thumbnail image.
-        clicks_per_min: Clicks rate per minute on input activity.
-        keystrokes_per_min: Keystrokes rate per minute on input activity.
-        url: Web page address from browser context.
-        browser_tab_title: Title text of the active browser tab.
-        session_id: Associated logical session ID.
-        session_boundary_type: Session boundary action type: "start" or "end".
-    """
-
+    """Immutable raw event captured from the user's environment."""
     event_id: str
     event_type: EventType
     timestamp: datetime
@@ -60,4 +35,4 @@ class RawEvent(BaseModel):
     browser_tab_title: str | None = None
 
     session_id: str | None = None
-    session_boundary_type: str | None = None
+    session_boundary_type: str | None = None  # "start" | "end"

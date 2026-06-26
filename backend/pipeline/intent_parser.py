@@ -1,9 +1,4 @@
-"""LLM response parser for intent classification output.
-
-Exports:
-    IntentParserError: Exception raised when LLM response validation fails.
-    IntentParser: Parser that validates and transforms LLM response to IntentRecord.
-"""
+"""LLM response parser for intent classification output."""
 
 from datetime import datetime, timezone
 from typing import Any
@@ -18,7 +13,7 @@ class IntentParserError(Exception):
 
 
 class IntentParser:
-    """Parser component that validates and transforms the LLM dictionary response to IntentRecord."""
+    """Parser that validates and transforms LLM response to IntentRecord."""
 
     def parse(
         self,
@@ -118,15 +113,7 @@ class IntentParser:
 
     @staticmethod
     def _safe_float(value: Any, default: float | None = None) -> float | None:
-        """Convert value to float representation safely returning fallback default on failure.
-
-        Args:
-            value: Input value to convert.
-            default: Fallback value if conversion fails.
-
-        Returns:
-            Float value or default if conversion fails.
-        """
+        """Convert value to float safely, returning default on failure."""
         if value is None:
             return default
         try:

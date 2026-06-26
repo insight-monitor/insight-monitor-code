@@ -1,8 +1,4 @@
-"""Clean Architecture use case for session intent inference.
-
-Exports:
-    InferIntentUseCase: Use case orchestrating session classification via injected components.
-"""
+"""Clean Architecture use case for session intent inference."""
 
 import logging
 from typing import Any
@@ -17,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class InferIntentUseCase:
-    """Clean Architecture use case orchestrating the session classification via injected components."""
+    """Clean Architecture use case orchestrating session classification via injected components."""
 
     def __init__(
         self,
@@ -28,16 +24,7 @@ class InferIntentUseCase:
         prompt_builder: Any,
         intent_parser: Any,
     ):
-        """Initialize with injected repository and pipeline components.
-
-        Args:
-            session_repo: Repository for session data access.
-            event_repo: Repository for event data access.
-            intent_repo: Repository for intent record persistence.
-            llm_service: LLM service for prompt completion.
-            prompt_builder: Component that constructs LLM prompts.
-            intent_parser: Component that parses LLM responses.
-        """
+        """Initialize with injected repository and pipeline components."""
         self.session_repo = session_repo
         self.event_repo = event_repo
         self.intent_repo = intent_repo
@@ -59,18 +46,15 @@ class InferIntentUseCase:
             logger.warning("Session %s not found for inference", session_id)
             return None
 
-        # Verify idempotency by checking if intent record was already created
         if self.intent_repo.find_by_session(session_id):
             logger.info("Session %s already has intent, skipping", session_id)
             return None
 
-        # Ensure session possesses related events
         events = self.event_repo.find_by_session(session_id)
         if not events:
             logger.warning("Session %s has no events, skipping inference", session_id)
             return None
 
-        # Format prompt payload and query target LLM provider
         prompt = self.prompt_builder.build(session, events)
         logger.info("Running inference for session %s (events=%d)", session_id, len(events))
 
@@ -80,14 +64,12 @@ class InferIntentUseCase:
             logger.error("LLM inference failed for session %s: %s", session_id, e)
             return None
 
-        # Convert structured payload response dictionary to record entity
         try:
             intent = self.intent_parser.parse(raw_response, session_id, raw_text=raw_text)
         except Exception as e:
             logger.error("Intent parsing failed for session %s: %s", session_id, e)
             return None
 
-        # Store output intent details and synchronize changes on session row
         self.intent_repo.create(intent.model_dump())
         self.session_repo.update(session_id, {
             "session_type": intent.session_type,

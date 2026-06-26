@@ -1,9 +1,4 @@
-"""Intent record domain entity representing inferred session analysis.
-
-Exports:
-    SessionType: Literal type for session classification categories.
-    IntentRecord: Structured analysis output from the LLM pipeline.
-"""
+"""Intent record domain entity representing inferred session analysis."""
 
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
@@ -20,27 +15,7 @@ SessionType = Literal[
 
 
 class IntentRecord(BaseModel):
-    """Analytical record representing the inferred intent of a session.
-
-    Attributes:
-        record_id: Unique UUID identifier for this analysis record.
-        session_id: Identifier of the analyzed session.
-        timestamp: UTC date and time of the analysis execution.
-        session_type: Main classification code of the session.
-        goal: Principal objective text inferred by the LLM.
-        goal_confidence: Meta confidence level [0-1].
-        friction_points: List of obstacles or issues detected.
-        friction_confidence: Confidence score for the detected friction.
-        category: Specific topic or subcategory tag.
-        category_confidence: Confidence score for subcategory.
-        tags: Keywords representing tools and topics.
-        evidence: Factual items supporting the classification.
-        alternatives: Secondary interpretation options.
-        app_summary: Process statistics and switches summary.
-        raw_timeline_summary: Narrative timeline description of the activity.
-        raw_llm_response: Complete raw string response from the LLM.
-    """
-
+    """Analytical record representing the inferred intent of a session."""
     model_config = ConfigDict(from_attributes=True)
 
     record_id: str
