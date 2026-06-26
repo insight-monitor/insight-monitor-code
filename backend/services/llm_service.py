@@ -5,6 +5,8 @@ from typing import Any                 # Standard library type hinting for gener
 
 from backend.config import settings    # Configuration settings from environment files
 
+logger = logging.getLogger(__name__) # Standard library logger for runtime diagnostics
+
 
 # Exception raised when the LLM call fails or returns non-parseable output
 class LLMServiceError(Exception):
