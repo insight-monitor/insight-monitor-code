@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { getHealth, getSessions, type Health, type Session } from "./api/client"
+import SessionDetail from "./SessionDetail"
 
 function confidenceBadge(confidence: number | null) {
   if (confidence == null) return <span className="text-gray-400">—</span>
@@ -58,7 +59,7 @@ function parseApps(activeApps: string): string {
   }
 }
 
-function App() {
+function SessionListView({ onSelect }: { onSelect: (id: string) => void }) {
   const [health, setHealth] = useState<Health | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,7 +80,7 @@ function App() {
       }
     }
     fetch()
-    const interval = setInterval(fetch, 10000)
+    const interval = setInterval(fetch, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -105,7 +106,7 @@ function App() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-900">Sessions</h2>
-          <p className="text-gray-500 mt-1">Monitor your computer activity sessions</p>
+          <p className="text-gray-500 mt-1">Click a session to view details and inferred intent</p>
         </div>
 
         {loading ? (
@@ -139,7 +140,11 @@ function App() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {sessions.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={s.id}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => onSelect(s.id)}
+                    >
                       <td className="px-4 py-3">{statusBadge(s.status)}</td>
                       <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
                         {new Date(s.start_time).toLocaleString()}
@@ -168,4 +173,17 @@ function App() {
   )
 }
 
-export default App
+export default function App() {
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+
+  if (selectedSessionId) {
+    return (
+      <SessionDetail
+        sessionId={selectedSessionId}
+        onBack={() => setSelectedSessionId(null)}
+      />
+    )
+  }
+
+  return <SessionListView onSelect={setSelectedSessionId} />
+}

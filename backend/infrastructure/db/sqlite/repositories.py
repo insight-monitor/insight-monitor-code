@@ -139,18 +139,52 @@ class SessionRepository(ISessionRepository):
         )
         self.db.commit()
 
-    def find_all(self, status: str | None = None, limit: int = 50) -> list[dict]:
+    def _build_list_query(
+        self,
+        status: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        select_count: bool = False,
+    ) -> tuple[str, list]:
+        base = "SELECT COUNT(*) AS total FROM sessions" if select_count else "SELECT * FROM sessions"
+        conditions: list[str] = []
+        params: list = []
+
         if status:
-            rows = self.db.fetch_all(
-                "SELECT * FROM sessions WHERE status = ? ORDER BY start_time DESC LIMIT ?",
-                (status, limit),
-            )
-        else:
-            rows = self.db.fetch_all(
-                "SELECT * FROM sessions ORDER BY start_time DESC LIMIT ?",
-                (limit,),
-            )
+            conditions.append("status = ?")
+            params.append(status)
+        if start_date:
+            conditions.append("start_time >= ?")
+            params.append(start_date)
+        if end_date:
+            conditions.append("start_time <= ?")
+            params.append(end_date)
+
+        where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+        return f"{base}{where}", params
+
+    def find_all(
+        self,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> list[dict]:
+        query, params = self._build_list_query(status, start_date, end_date)
+        query += " ORDER BY start_time DESC LIMIT ? OFFSET ?"
+        rows = self.db.fetch_all(query, [*params, limit, offset])
         return [_parse_json_fields(r, _SESSION_JSON_FIELDS) for r in rows]
+
+    def count_all(
+        self,
+        status: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> int:
+        query, params = self._build_list_query(status, start_date, end_date, select_count=True)
+        row = self.db.fetch_one(query, params)
+        return row["total"] if row else 0
 
     def find_by_id(self, session_id: str) -> dict | None:
         row = self.db.fetch_one(

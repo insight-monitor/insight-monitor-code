@@ -1,8 +1,11 @@
+import json
 import logging
+import os
 import re
 import subprocess
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -12,8 +15,39 @@ BROWSER_PROCESSES = {
     "brave", "opera", "edge", "vivaldi",
 }
 
+WAYLAND_WINDOW_FILE = Path(os.getenv("INSIGHT_WAYLAND_WINDOW_FILE", "/tmp/insight-window.json"))
 
-class WindowTracker:
+
+def detect_display_server() -> str:
+    """Detect the active display server: 'wayland', 'x11', or 'unknown'."""
+    session_type = os.getenv("XDG_SESSION_TYPE", "").lower()
+    if session_type == "wayland":
+        return "wayland"
+    if session_type == "x11":
+        return "x11"
+
+    if os.getenv("WAYLAND_DISPLAY"):
+        return "wayland"
+    if os.getenv("DISPLAY"):
+        return "x11"
+
+    return "unknown"
+
+
+def create_window_tracker() -> "WindowTracker":
+    """Factory: returns the correct tracker for the current display server."""
+    server = detect_display_server()
+    logger.info("Detected display server: %s", server)
+
+    if server == "wayland":
+        logger.info("Using WaylandWindowTracker (reads from %s)", WAYLAND_WINDOW_FILE)
+        return WaylandWindowTracker()
+    return X11WindowTracker()
+
+
+class X11WindowTracker:
+    """Tracks the active window via xdotool + xprop (X11 only)."""
+
     def __init__(self):
         self._active_window: dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -24,7 +58,7 @@ class WindowTracker:
         self._running = True
         self._thread = threading.Thread(target=self._poll, daemon=True)
         self._thread.start()
-        logger.info("Window tracker started")
+        logger.info("X11 window tracker started")
 
     def _poll(self):
         while self._running:
@@ -34,8 +68,7 @@ class WindowTracker:
                     with self._lock:
                         self._active_window = info
             except Exception as e:
-                logger.debug("Window tracking error: %s", e)
-
+                logger.debug("X11 window tracking error: %s", e)
             time.sleep(1)
 
     def _get_active_window_info(self) -> dict[str, Any] | None:
@@ -47,7 +80,6 @@ class WindowTracker:
             return None
 
         window_id = result.stdout.strip()
-
         title = self._get_xprop(window_id, "WM_NAME")
         pid = self._get_pid(window_id)
         process_name = self._get_process_name(pid) if pid else None
@@ -62,7 +94,7 @@ class WindowTracker:
         if process_name and process_name.lower() in BROWSER_PROCESSES:
             tab_title = self._get_browser_tab_title(window_id)
             if tab_title:
-                info["url"] = self.extract_url_from_title(tab_title)
+                info["url"] = self._extract_url_from_title(tab_title)
                 info["browser_tab_title"] = tab_title
 
         return info
@@ -116,7 +148,8 @@ class WindowTracker:
             pass
         return None
 
-    def extract_url_from_title(self, title: str) -> str | None:
+    @staticmethod
+    def _extract_url_from_title(title: str) -> str | None:
         url_patterns = [
             r"https?://[^\s]+",
             r"\b[\w.-]+\.(com|org|net|io|dev|app|edu|gov)\S*",
@@ -135,4 +168,83 @@ class WindowTracker:
         self._running = False
         if self._thread:
             self._thread.join(timeout=3)
-        logger.info("Window tracker stopped")
+        logger.info("X11 window tracker stopped")
+
+
+class WaylandWindowTracker:
+    """Tracks the active window on Wayland via a GNOME Shell extension JSON file.
+    
+    Requires the insight-monitor@insight-monitor GNOME Shell extension to be enabled.
+    The extension writes the focused window info to /tmp/insight-window.json.
+    """
+
+    def __init__(self):
+        self._active_window: dict[str, Any] = {}
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread: threading.Thread | None = None
+        self._extension_warning_logged = False
+
+    def start(self):
+        self._running = True
+        self._thread = threading.Thread(target=self._poll, daemon=True)
+        self._thread.start()
+        logger.info("Wayland window tracker started (file: %s)", WAYLAND_WINDOW_FILE)
+
+    def _poll(self):
+        while self._running:
+            try:
+                info = self._read_window_file()
+                with self._lock:
+                    self._active_window = info
+            except Exception as e:
+                logger.debug("Wayland window tracking error: %s", e)
+            time.sleep(1)
+
+    def _read_window_file(self) -> dict[str, Any]:
+        if not WAYLAND_WINDOW_FILE.exists():
+            if not self._extension_warning_logged:
+                logger.warning(
+                    "Wayland window file %s not found. "
+                    "Install and enable the insight-monitor GNOME Shell extension. "
+                    "See: docs/capture-agent/wayland-setup.md"
+                )
+                self._extension_warning_logged = True
+            return {}
+
+        try:
+            raw = WAYLAND_WINDOW_FILE.read_text()
+            data = json.loads(raw)
+
+            return {
+                "title": data.get("title", ""),
+                "pid": data.get("pid"),
+                "process": self._pid_to_process_name(data.get("pid")),
+                "wm_class": data.get("wm_class", ""),
+            }
+        except (json.JSONDecodeError, OSError) as e:
+            logger.debug("Error reading %s: %s", WAYLAND_WINDOW_FILE, e)
+            return {}
+
+    @staticmethod
+    def _pid_to_process_name(pid: int | None) -> str | None:
+        if pid is None:
+            return None
+        try:
+            result = subprocess.run(
+                ["ps", "-p", str(pid), "-o", "comm="],
+                capture_output=True, text=True, timeout=1,
+            )
+            return result.stdout.strip() or None
+        except Exception:
+            return None
+
+    def get_active_window(self) -> dict[str, Any]:
+        with self._lock:
+            return dict(self._active_window)
+
+    def stop(self):
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=3)
+        logger.info("Wayland window tracker stopped")

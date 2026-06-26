@@ -3,7 +3,7 @@ import time
 import logging
 from pathlib import Path
 
-from capture.window_tracker import WindowTracker
+from capture.window_tracker import create_window_tracker
 from capture.screenshot_capture import ScreenshotCapture
 from capture.input_monitor import InputMonitor
 from capture.event_sender import EventSender
@@ -28,7 +28,7 @@ class CaptureAgent:
         self.screenshot_dir = Path(screenshot_dir_path)
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
 
-        self.window_tracker = WindowTracker()
+        self.window_tracker = create_window_tracker()
         self.screenshot_capture = ScreenshotCapture(self.screenshot_dir)
         self.input_monitor = InputMonitor()
         self.event_sender = EventSender(self.api_url)

@@ -45,6 +45,12 @@ export interface SessionDetail extends Session {
   intent?: IntentRecord
 }
 
+export interface SessionListResponse {
+  sessions: Session[]
+  count: number
+  total: number
+}
+
 export interface IntentRecord {
   record_id: string
   session_id: string
@@ -68,9 +74,18 @@ export interface IntentRecord {
 async function request<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`)
   if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`)
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.detail || `API error: ${res.status} ${res.statusText}`)
   }
   return res.json()
+}
+
+export interface SessionFilters {
+  status?: string
+  limit?: number
+  offset?: number
+  start_date?: string
+  end_date?: string
 }
 
 export async function getHealth(): Promise<Health> {
@@ -78,15 +93,15 @@ export async function getHealth(): Promise<Health> {
 }
 
 export async function getSessions(
-  status?: string,
-  limit: number = 50
-): Promise<{ sessions: Session[]; count: number }> {
+  filters: SessionFilters = {}
+): Promise<SessionListResponse> {
   const params = new URLSearchParams()
-  if (status) params.set("status", status)
-  params.set("limit", String(limit))
-  return request<{ sessions: Session[]; count: number }>(
-    `/sessions?${params.toString()}`
-  )
+  if (filters.status) params.set("status", filters.status)
+  if (filters.limit != null) params.set("limit", String(filters.limit))
+  if (filters.offset != null) params.set("offset", String(filters.offset))
+  if (filters.start_date) params.set("start_date", filters.start_date)
+  if (filters.end_date) params.set("end_date", filters.end_date)
+  return request<SessionListResponse>(`/sessions?${params.toString()}`)
 }
 
 export async function getSession(

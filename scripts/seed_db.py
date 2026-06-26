@@ -18,17 +18,15 @@ from pathlib import Path
 # Ensure backend package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from backend.config import settings
 from backend.infrastructure.db.sqlite.database import Database
 from backend.infrastructure.db.sqlite.repositories import SessionRepository, IntentRepository
 
 
-DB_PATH = Path("./data/insight_monitor.db")
-
-
 def seed():
-    Path("./data").mkdir(exist_ok=True)
+    Path(settings.db_path).parent.mkdir(exist_ok=True)
 
-    db = Database(str(DB_PATH))
+    db = Database(settings.db_path)
     session_repo = SessionRepository(db)
     intent_repo = IntentRepository(db)
 
@@ -110,7 +108,7 @@ def seed():
     for rec in intents_data:
         intent_repo.create(rec)
 
-    print(f"Seeded {len(sessions_data)} sessions and {len(intents_data)} intent records into {DB_PATH}")
+    print(f"Seeded {len(sessions_data)} sessions and {len(intents_data)} intent records into {settings.db_path}")
 
 
 if __name__ == "__main__":

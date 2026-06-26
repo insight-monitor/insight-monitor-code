@@ -58,12 +58,38 @@ class InMemorySessionRepository(ISessionRepository):
         if session_id in self._store:
             self._store[session_id].update(updates)
 
-    def find_all(self, status: Optional[str] = None, limit: int = 50) -> List[dict]:
+    def find_all(
+        self,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> list[dict]:
         results = list(self._store.values())
         if status:
             results = [s for s in results if s.get("status") == status]
+        if start_date:
+            results = [s for s in results if (s.get("start_time") or "") >= start_date]
+        if end_date:
+            results = [s for s in results if (s.get("start_time") or "") <= end_date]
         results.sort(key=lambda s: s.get("start_time", ""), reverse=True)
-        return [copy.deepcopy(s) for s in results[:limit]]
+        return [copy.deepcopy(s) for s in results[offset:offset + limit]]
+
+    def count_all(
+        self,
+        status: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> int:
+        results = list(self._store.values())
+        if status:
+            results = [s for s in results if s.get("status") == status]
+        if start_date:
+            results = [s for s in results if (s.get("start_time") or "") >= start_date]
+        if end_date:
+            results = [s for s in results if (s.get("start_time") or "") <= end_date]
+        return len(results)
 
     def find_by_id(self, session_id: str) -> Optional[dict]:
         session = self._store.get(session_id)

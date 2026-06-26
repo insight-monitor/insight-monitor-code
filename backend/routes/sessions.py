@@ -1,3 +1,5 @@
+from datetime import date as date_type
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.application.use_cases.get_session import GetSessionUseCase
@@ -9,11 +11,18 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 @router.get("")
 async def list_sessions(
     status: str | None = Query(None),
-    limit: int = Query(50, le=100),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    start_date: date_type | None = Query(None),
+    end_date: date_type | None = Query(None),
     use_case: GetSessionUseCase = Depends(get_get_session_use_case),
 ):
-    sessions = use_case.list_all(status=status, limit=limit)
-    return {"sessions": sessions, "count": len(sessions)}
+    result = use_case.list_all(
+        status=status, limit=limit, offset=offset,
+        start_date=start_date.isoformat() if start_date else None,
+        end_date=end_date.isoformat() if end_date else None,
+    )
+    return result
 
 
 @router.get("/{session_id}")

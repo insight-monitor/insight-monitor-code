@@ -39,9 +39,22 @@ class GetSessionUseCase:
             result["intent"] = intent
         return result
 
-    def list_all(self, status: Optional[str] = None, limit: int = 50) -> list[dict]:
-        """Lists sessions, optionally filtered by status."""
-        return self.session_repo.find_all(status=status, limit=limit)
+    def list_all(
+        self,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> dict:
+        sessions = self.session_repo.find_all(
+            status=status, limit=limit, offset=offset,
+            start_date=start_date, end_date=end_date,
+        )
+        total = self.session_repo.count_all(
+            status=status, start_date=start_date, end_date=end_date,
+        )
+        return {"sessions": sessions, "count": len(sessions), "total": total}
 
     def close(self, session_id: str) -> bool:
         """Closes a session. Returns False if not found."""
