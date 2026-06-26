@@ -182,6 +182,6 @@ class TestGetSessionUseCase:
         session_repo.create({"id": "s-closed", "start_time": now, "status": "closed", "event_count": 0, "screenshot_count": 0, "app_sequence": [], "active_apps": []})
 
         use_case = GetSessionUseCase(session_repo, event_repo, intent_repo)
-        open_sessions = use_case.list_all(status="open")
-        assert len(open_sessions) == 1
-        assert open_sessions[0]["id"] == "s-open"
+        result = use_case.list_all(status="open")
+        assert len(result["sessions"]) == 1
+        assert result["sessions"][0]["id"] == "s-open"

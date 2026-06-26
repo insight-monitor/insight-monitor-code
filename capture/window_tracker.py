@@ -6,9 +6,13 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from capture.window_tracker import WindowTracker
+
 
 BROWSER_PROCESSES = {
     "firefox", "firefox-esr", "chrome", "chromium", "chromium-browser",
