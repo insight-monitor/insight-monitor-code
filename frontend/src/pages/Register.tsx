@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useAuth } from "../context/AuthContext"
+import { useState, useEffect } from "react"
+import { useAuth } from "../context/useAuth"
 
 export default function Register() {
   const { register, isAuthenticated } = useAuth()
@@ -9,10 +9,11 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  if (isAuthenticated) {
-    window.location.hash = "#/dashboard"
-    return null
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.location.hash = "#/dashboard"
+    }
+  }, [isAuthenticated])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -21,8 +22,8 @@ export default function Register() {
     try {
       await register(name, email, password)
       window.location.hash = "#/dashboard"
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error desconocido")
     } finally {
       setLoading(false)
     }

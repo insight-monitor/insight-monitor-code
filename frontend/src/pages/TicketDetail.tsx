@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { ticketService, commentService } from "../api/tickets"
-import { useAuth } from "../context/AuthContext"
-import { showAlert } from "../components/Alert"
+import { ticketService, commentService, type Ticket, type Comment } from "../api/tickets"
+import { useAuth } from "../context/useAuth"
+import { showAlert } from "../components/AlertService"
 
 const STATUS_MAP: Record<string, string> = { OPEN: "Abierto", IN_PROGRESS: "En Proceso", CLOSED: "Cerrado" }
 const PRIORITY_MAP: Record<string, string> = { LOW: "Baja", MEDIUM: "Media", HIGH: "Alta", CRITICAL: "Crítica" }
@@ -31,8 +31,8 @@ function formatDate(dateStr: string) {
 
 export default function TicketDetail({ ticketId }: { ticketId: string }) {
   const { user } = useAuth()
-  const [ticket, setTicket] = useState<any>(null)
-  const [comments, setComments] = useState<any[]>([])
+  const [ticket, setTicket] = useState<Ticket | null>(null)
+  const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState("")
   const [isInternal, setIsInternal] = useState(false)
@@ -47,8 +47,8 @@ export default function TicketDetail({ ticketId }: { ticketId: string }) {
         ])
         setTicket(t)
         setComments(c || [])
-      } catch (err: any) {
-        showAlert(err.message, "danger")
+      } catch (err) {
+        showAlert(err instanceof Error ? err.message : "Error desconocido", "danger")
       } finally {
         setLoading(false)
       }
@@ -58,11 +58,11 @@ export default function TicketDetail({ ticketId }: { ticketId: string }) {
 
   async function handleStatusChange(status: string) {
     try {
-      const updated = await ticketService.update(ticketId, { ...ticket, status })
+      const updated = await ticketService.update(ticketId, { ...ticket, status } as Partial<Ticket>)
       setTicket(updated)
       showAlert("Estado actualizado", "success")
-    } catch (err: any) {
-      showAlert(err.message, "danger")
+    } catch (err) {
+      showAlert(err instanceof Error ? err.message : "Error desconocido", "danger")
     }
   }
 
@@ -75,8 +75,8 @@ export default function TicketDetail({ ticketId }: { ticketId: string }) {
       setComments([...comments, comment])
       setNewComment("")
       setIsInternal(false)
-    } catch (err: any) {
-      showAlert(err.message, "danger")
+    } catch (err) {
+      showAlert(err instanceof Error ? err.message : "Error desconocido", "danger")
     } finally {
       setSending(false)
     }
@@ -88,8 +88,8 @@ export default function TicketDetail({ ticketId }: { ticketId: string }) {
       await commentService.delete(ticketId, commentId)
       setComments(comments.filter((c) => c.id !== commentId))
       showAlert("Comentario eliminado", "success")
-    } catch (err: any) {
-      showAlert(err.message, "danger")
+    } catch (err) {
+      showAlert(err instanceof Error ? err.message : "Error desconocido", "danger")
     }
   }
 
@@ -142,8 +142,8 @@ export default function TicketDetail({ ticketId }: { ticketId: string }) {
         </div>
         <div className="flex gap-6 text-xs text-slate-400 border-t border-slate-100 pt-4">
           <span><strong>Autor:</strong> {ticket.author?.name || "—"}</span>
-          <span><strong>Creado:</strong> {formatDate(ticket.createdAt)}</span>
-          <span><strong>Actualizado:</strong> {formatDate(ticket.updatedAt)}</span>
+          <span><strong>Creado:</strong> {formatDate(ticket.created_at)}</span>
+          <span><strong>Actualizado:</strong> {formatDate(ticket.updated_at)}</span>
         </div>
         {ticket.aiSuggestion && (
           <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm">
@@ -169,7 +169,7 @@ export default function TicketDetail({ ticketId }: { ticketId: string }) {
                     </div>
                     <div>
                       <div className="text-sm font-medium text-slate-900">{c.author?.name || "Usuario"}</div>
-                      <div className="text-xs text-slate-400">{formatDate(c.createdAt)}</div>
+                      <div className="text-xs text-slate-400">{formatDate(c.created_at)}</div>
                     </div>
                   </div>
                   {(user?.role === "admin" || c.author?.id === user?.id) && (

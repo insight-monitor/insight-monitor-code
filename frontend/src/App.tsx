@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { AuthProvider, useAuth } from "./context/AuthContext"
+import { AuthProvider } from "./context/AuthContext"
+import { useAuth } from "./context/useAuth"
 import Layout from "./components/Layout"
 import AlertContainer from "./components/Alert"
 import Login from "./pages/Login"
@@ -10,6 +11,13 @@ import TicketDetail from "./pages/TicketDetail"
 import CreateTicket from "./pages/CreateTicket"
 import Sessions from "./pages/Sessions"
 import SessionDetail from "./pages/SessionDetail"
+
+function Redirect({ route, isAuthenticated }: { route: string; isAuthenticated: boolean }) {
+  useEffect(() => {
+    window.location.hash = isAuthenticated ? "#/dashboard" : "#/login"
+  }, [isAuthenticated, route])
+  return null
+}
 
 const PUBLIC_ROUTES = ["/login", "/register", "/sessions"]
 
@@ -33,10 +41,17 @@ function Router() {
     return () => window.removeEventListener("hashchange", handleRoute)
   }, [])
 
+  // Handle redirects via effect to satisfy react-hooks/immutability
+  useEffect(() => {
+    if (!route) return
+    if (!isAuthenticated && !_isPublicRoute(route)) {
+      window.location.hash = "#/login"
+    }
+  }, [route, isAuthenticated])
+
   if (!route) return null
 
   if (!isAuthenticated && !_isPublicRoute(route)) {
-    window.location.hash = "#/login"
     return null
   }
 
@@ -59,8 +74,7 @@ function Router() {
       case "/tickets/create": return <CreateTicket />
       case "/sessions": return <Sessions />
       default: {
-        window.location.hash = isAuthenticated ? "#/dashboard" : "#/sessions"
-        return null
+        return <Redirect route={route} isAuthenticated={isAuthenticated} />
       }
     }
   }

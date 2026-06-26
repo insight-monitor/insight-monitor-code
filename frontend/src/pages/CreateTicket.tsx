@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { ticketService } from "../api/tickets"
-import { showAlert } from "../components/Alert"
+import { showAlert } from "../components/AlertService"
 
 export default function CreateTicket() {
   const [title, setTitle] = useState("")
@@ -16,8 +16,8 @@ export default function CreateTicket() {
       await ticketService.create({ title: title.trim(), description: description.trim(), priority })
       showAlert("Ticket creado exitosamente", "success")
       window.location.hash = "#/tickets"
-    } catch (err: any) {
-      showAlert(err.message, "danger")
+    } catch (err) {
+      showAlert(err instanceof Error ? err.message : "Error desconocido", "danger")
     } finally {
       setSending(false)
     }

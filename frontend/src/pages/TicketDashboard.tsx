@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
-import { ticketService } from "../api/tickets"
+import { ticketService, type Ticket, type TicketStats } from "../api/tickets"
 
 export default function TicketDashboard() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<{ tickets: Ticket[]; stats: TicketStats } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -14,8 +14,8 @@ export default function TicketDashboard() {
           ticketService.getStats(),
         ])
         setData({ tickets: tickets.data, stats })
-      } catch (err: any) {
-        setError(err.message)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error desconocido")
       } finally {
         setLoading(false)
       }
@@ -38,7 +38,7 @@ export default function TicketDashboard() {
   if (!data) return null
 
   const counts = { OPEN: 0, IN_PROGRESS: 0, CLOSED: 0 }
-  data.stats.byStatus?.forEach((s: any) => { counts[s.status as keyof typeof counts] = s._count?.status || 0 })
+  data.stats.byStatus?.forEach((s) => { counts[s.status as keyof typeof counts] = s.count || 0 })
   const total = Object.values(counts).reduce((a, b) => a + b, 0)
 
   const statCards = [
@@ -89,7 +89,7 @@ export default function TicketDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {data.tickets.map((t: any) => (
+                    {data.tickets.map((t: Ticket) => (
                       <tr key={t.id} onClick={() => window.location.hash = `#/tickets/${t.id}`} className="hover:bg-slate-50 cursor-pointer">
                         <td className="px-4 py-3">
                           <div className="font-medium text-slate-900">{t.title}</div>
@@ -98,7 +98,7 @@ export default function TicketDashboard() {
                         <td className="px-4 py-3">{statusBadge(t.status)}</td>
                         <td className="px-4 py-3">{priorityBadge(t.priority)}</td>
                         <td className="px-4 py-3">
-                          <span className="text-xs text-slate-400">{formatDate(t.createdAt)}</span>
+                          <span className="text-xs text-slate-400">{formatDate(t.created_at)}</span>
                         </td>
                       </tr>
                     ))}
@@ -114,14 +114,14 @@ export default function TicketDashboard() {
             <div className="px-5 py-4 border-b border-slate-100 font-semibold text-sm">Distribución por Prioridad</div>
             <div className="p-5">
               {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((key) => {
-                const cfg: Record<string, any> = {
+                const cfg: Record<string, { label: string; color: string }> = {
                   LOW: { label: "Baja", color: "#10b981" },
                   MEDIUM: { label: "Media", color: "#f59e0b" },
                   HIGH: { label: "Alta", color: "#ef4444" },
                   CRITICAL: { label: "Crítica", color: "#7c3aed" },
                 }
-                const item = data.stats.byPriority?.find((b: any) => b.priority === key)
-                const count = item?._count?.priority || 0
+                const item = data.stats.byPriority?.find((b) => b.priority === key)
+                const count = item?.count || 0
                 const pct = total ? Math.round((count / total) * 100) : 0
                 return (
                   <div key={key} className="mb-3 last:mb-0">

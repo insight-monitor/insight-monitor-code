@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useAuth } from "../context/AuthContext"
+import { useState, useEffect } from "react"
+import { useAuth } from "../context/useAuth"
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth()
@@ -8,10 +8,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  if (isAuthenticated) {
-    window.location.hash = "#/dashboard"
-    return null
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.location.hash = "#/dashboard"
+    }
+  }, [isAuthenticated])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -20,8 +21,8 @@ export default function Login() {
     try {
       await login(email, password)
       window.location.hash = "#/dashboard"
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error desconocido")
     } finally {
       setLoading(false)
     }

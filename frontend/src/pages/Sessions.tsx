@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { getHealth, getSessions, type Health, type Session } from "../api/client"
 
 function confidenceBadge(confidence: number | null) {
@@ -54,23 +54,23 @@ export default function Sessions() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function fetch() {
+  const fetch = useCallback(async () => {
     try {
       const [h, s] = await Promise.all([getHealth(), getSessions()])
       setHealth(h)
       setSessions(s.sessions)
     } catch {
-      if (!health) setHealth(null)
+      setHealth(null)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetch()
+    setTimeout(() => fetch(), 0)
     const interval = setInterval(fetch, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetch])
 
   const agentOnline = health?.status === "ok"
 

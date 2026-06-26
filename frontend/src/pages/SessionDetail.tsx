@@ -77,7 +77,7 @@ function EventTimeline({ events }: { events: RawEvent[] }) {
             {ev.process_name && (
               <p className="text-xs text-slate-500">{ev.process_name}</p>
             )}
-            {ev.clicks_per_min != null && (
+            {ev.clicks_per_min != null && ev.keystrokes_per_min != null && (
               <p className="text-xs text-slate-500">Clicks: {ev.clicks_per_min.toFixed(0)}/min &middot; Keystrokes: {ev.keystrokes_per_min.toFixed(0)}/min</p>
             )}
           </div>

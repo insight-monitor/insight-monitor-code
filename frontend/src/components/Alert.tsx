@@ -1,18 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
-
-interface AlertData {
-  id: number
-  message: string
-  type: "success" | "danger" | "info"
-}
-
-let alertId = 0
-const listeners: Set<(alert: AlertData) => void> = new Set()
-
-export function showAlert(message: string, type: "success" | "danger" | "info" = "info") {
-  const alert: AlertData = { id: ++alertId, message, type }
-  listeners.forEach((fn) => fn(alert))
-}
+import { type AlertData } from "./AlertService"
+import { listeners } from "./AlertService"
 
 export default function AlertContainer() {
   const [alerts, setAlerts] = useState<AlertData[]>([])

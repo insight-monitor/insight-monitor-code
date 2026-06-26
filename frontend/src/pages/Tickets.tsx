@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
-import { ticketService } from "../api/tickets"
-import { showAlert } from "../components/Alert"
+import { useEffect, useState, useCallback, useRef } from "react"
+import { ticketService, type Ticket } from "../api/tickets"
+import { showAlert } from "../components/AlertService"
 
 const STATUS_MAP: Record<string, string> = { OPEN: "Abierto", IN_PROGRESS: "En Proceso", CLOSED: "Cerrado" }
 const PRIORITY_MAP: Record<string, string> = { LOW: "Baja", MEDIUM: "Media", HIGH: "Alta", CRITICAL: "Crítica" }
@@ -29,16 +29,19 @@ function formatDate(dateStr: string) {
 }
 
 export default function Tickets() {
-  const [tickets, setTickets] = useState<any[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const limit = 10
+  const loadedRef = useRef(false)
 
-  async function loadTickets() {
+  const loadTickets = useCallback(async () => {
+    if (loadedRef.current && page === 1 && !search && !statusFilter) return
+    loadedRef.current = true
     setLoading(true)
     setError("")
     try {
@@ -48,19 +51,21 @@ export default function Tickets() {
       const res = await ticketService.getAll(params)
       setTickets(res.data)
       setTotal(res.total)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error desconocido")
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, statusFilter, search])
 
-  useEffect(() => { loadTickets() }, [page, statusFilter])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTickets()
+  }, [loadTickets])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1)
-      loadTickets()
     }, 400)
     return () => clearTimeout(timer)
   }, [search])
@@ -73,8 +78,8 @@ export default function Tickets() {
       await ticketService.delete(id)
       showAlert("Ticket eliminado", "success")
       loadTickets()
-    } catch (err: any) {
-      showAlert(err.message, "danger")
+    } catch (err) {
+      showAlert(err instanceof Error ? err.message : "Error desconocido", "danger")
     }
   }
 
@@ -152,7 +157,7 @@ export default function Tickets() {
                   <td className="px-4 py-3">{priorityBadge(t.priority)}</td>
                   <td className="px-4 py-3 text-xs text-slate-600">{t.category || "—"}</td>
                   <td className="px-4 py-3 text-xs text-slate-600">{t.author?.name || "—"}</td>
-                  <td className="px-4 py-3 text-xs text-slate-400">{formatDate(t.createdAt)}</td>
+                  <td className="px-4 py-3 text-xs text-slate-400">{formatDate(t.created_at)}</td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => handleDelete(t.id)} className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-1" title="Eliminar">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
