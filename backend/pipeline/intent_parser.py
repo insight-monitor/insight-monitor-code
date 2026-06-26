@@ -1,4 +1,3 @@
-import logging                     # Standard library logging module
 from datetime import datetime, timezone # Standard library datetime types
 from typing import Any                 # Standard library type hinting for generic types
 from uuid import uuid4                 # Standard library UUID version 4 generator
