@@ -1,107 +1,40 @@
-"""
-domain/entities/intent_record.py
-----------------------------------
-Define IntentRecord: el esquema de salida del pipeline de inferencia.
-
-Cuando el LLM analiza una sesión, su respuesta JSON se transforma en un
-IntentRecord. Este objeto representa la «intención» del usuario durante
-la sesión: qué estaba haciendo, con qué nivel de confianza, qué fricción
-experimentó y qué evidencia respalda la clasificación.
-
-Es el artefacto final que se persiste en la base de datos y que otros
-módulos (dashboard, analytics, API) consultan.
-"""
-
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
-# ---------------------------------------------------------------------------
-# Tipo literal que restringe los valores válidos de session_type.
-# Cualquier valor fuera de esta lista será rechazado por Pydantic en runtime.
-# ---------------------------------------------------------------------------
+# Tipos de sesión soportados por el clasificador
 SessionType = Literal[
-    "skill_development",   # El usuario está aprendiendo una habilidad nueva (tutoriales, cursos).
-    "applied_learning",    # El usuario aplica conocimiento en un proyecto real (código, diseño).
-    "peer_collaboration",  # Actividad colaborativa con otras personas (reuniones, pair programming).
-    "ambiguous",           # Evidencia insuficiente para clasificar con confianza.
-    "personal"             # Actividad personal no relacionada con trabajo o estudio.
+    "skill_development",   # Desarrollo de habilidades / aprendizaje teórico
+    "applied_learning",    # Aprendizaje aplicado en proyectos prácticos
+    "peer_collaboration",  # Colaboración activa con compañeros/reuniones
+    "ambiguous",           # Sesión con actividad ambigua o poco clara
+    "personal"             # Actividades de uso personal o de ocio
 ]
 
 
+# Registro de intención inferida para una sesión
 class IntentRecord(BaseModel):
-    """
-    Registro de intención inferida para una sesión de trabajo/estudio.
+    model_config = ConfigDict(from_attributes=True)  # Permite instanciar desde objetos tipo ORM
 
-    Este modelo es el resultado final del pipeline de inferencia. Combina
-    la clasificación del LLM con metadatos de auditoría (timestamp, record_id)
-    y el texto crudo de la respuesta del modelo para trazabilidad.
+    record_id: str             # Identificador único del registro (UUID)
+    session_id: str            # ID de la sesión analizada
+    timestamp: datetime        # Fecha y hora UTC de la inferencia
 
-    Configuración
-    -------------
-    from_attributes=True permite construir instancias desde ORMs o dicts
-    con atributos (compatibilidad con SQLAlchemy / repositories).
+    session_type: SessionType  # Clasificación principal de la sesión
+    goal: str                  # Objetivo principal deducido para la sesión
+    goal_confidence: float = Field(..., ge=0.0, le=1.0)  # Confianza de la meta [0-1]
 
-    Campos de identidad
-    --------------------
-    record_id  : UUID único del registro de intención.
-    session_id : ID de la sesión a la que pertenece este registro.
-    timestamp  : Momento UTC en que se generó el registro.
+    friction_points: list[str] = []          # Puntos de fricción o bloqueos encontrados
+    friction_confidence: float | None = None  # Confianza en la fricción (None si no aplica)
 
-    Clasificación principal
-    ------------------------
-    session_type      : Categoría de alto nivel de la sesión (ver SessionType).
-    goal              : Descripción en lenguaje natural del objetivo del usuario.
-    goal_confidence   : Confianza en el goal [0.0 – 1.0]. Validado por Field.
+    category: str = "ambiguous"              # Categoría específica/tema de la sesión
+    category_confidence: float = Field(default=0.0, ge=0.0, le=1.0)  # Confianza en la categoría
 
-    Fricción detectada
-    -------------------
-    friction_points     : Lista de obstáculos observados (cambios frecuentes, errores, etc.).
-    friction_confidence : Confianza en la detección de fricción (None si no hay fricción).
+    tags: list[str] = []          # Etiquetas asociadas a herramientas o tecnologías
+    evidence: list[str] = []      # Observaciones del comportamiento que validan el análisis
+    alternatives: list[str] = []  # Hipótesis alternativas de intención
 
-    Clasificación secundaria
-    -------------------------
-    category            : Sub-tipo más específico dentro de session_type (ej. "react_tutorial").
-    category_confidence : Confianza en la categoría [0.0 – 1.0].
+    app_summary: dict = Field(default_factory=dict)  # Resumen de uso de aplicaciones y switches
+    raw_timeline_summary: str = ""  # Resumen cronológico en prosa
 
-    Evidencia y contexto
-    ---------------------
-    tags         : Palabras clave que caracterizan la sesión (herramientas, temas).
-    evidence     : Observaciones concretas del LLM que justifican la clasificación.
-    alternatives : Interpretaciones alternativas menos probables de la sesión.
-
-    Resumen de actividad
-    ---------------------
-    app_summary          : Dict con primary_apps, total_context_switches y
-                           estimated_typing_intensity (generado por el LLM).
-    raw_timeline_summary : Narrativa cronológica breve de la sesión (2-4 frases).
-
-    Trazabilidad
-    -------------
-    raw_llm_response : Texto crudo devuelto por el LLM antes del parsing JSON.
-                       Útil para debug y auditoría.
-    """
-    model_config = ConfigDict(from_attributes=True)
-
-    record_id: str
-    session_id: str
-    timestamp: datetime
-
-    session_type: SessionType
-    goal: str
-    goal_confidence: float = Field(..., ge=0.0, le=1.0)
-
-    friction_points: list[str] = []
-    friction_confidence: float | None = None
-
-    category: str = "ambiguous"
-    category_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-
-    tags: list[str] = []
-    evidence: list[str] = []
-    alternatives: list[str] = []
-
-    app_summary: dict = Field(default_factory=dict)
-    raw_timeline_summary: str = ""
-
-    raw_llm_response: str | None = None
+    raw_llm_response: str | None = None  # Respuesta en texto crudo del LLM para auditoría
