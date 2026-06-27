@@ -4,53 +4,6 @@ Monitoring that understands *intent*, not just apps.
 
 ---
 
-## Project Status — MVP 14-Day Plan (Jun 15 → Jun 29)
-
-```
-MVP Progress: ████████░░░░░░░░ 4/14 days (28%)
-Days: [1][2][3][4] [5] [6] [7] [8─14]
-      ✅✅✅✅ 🔜 🔜 🔜 🔜
-```
-
-### Day 1 — Jun 15 — Project Scaffold ✅
-- Pydantic models (`RawEvent`, `SessionContext`, `IntentRecord`)
-- Poetry project setup + FastAPI app skeleton with CORS
-- SQLite schema (WAL mode, thread-safe) + CRUD repositories
-- React + Vite + TailwindCSS scaffold
-- Capture agent skeleton (main loop, event sender)
-- Root scripts with concurrently
-
-### Day 2 — Jun 16 — Window Tracking + API Routes ✅
-- Window tracker (`xdotool` + `xprop`, browser tab detection, URL extraction)
-- `GET /health`, `POST /events`, `GET /events` endpoints
-- `GET /sessions`, `GET /sessions/{id}`, `GET /sessions/{id}/intent` endpoints
-- Simulate session script (Riwi/BPO realistic events)
-- Seed DB script
-
-### Day 3 — Jun 17 — Screenshot + Input Monitor + Batch API ✅
-- Screenshot capture (`mss`, configurable interval via env)
-- Input frequency monitor (`pynput`: clicks/min, keystrokes/min)
-- `POST /events/batch` endpoint
-- `GET /sessions` with status filter + limit
-- Frontend API client module + live health check indicator
-- Capture agent: env var support, graceful shutdown, port fix
-- Fix Vite proxy (`/api` rewrite → backend)
-
-### Day 4 — Jun 18 — Session Builder + Close Detection ✅
-- Session builder: groups RawEvents by time + inactivity gap (8 min default)
-- Auto-close detection (gap > threshold → close), explicit `POST /sessions/{id}/close`
-- `GET /sessions/{id}` now includes events array + intent
-- Background task runs session builder every 30s
-- Frontend session list table (status, duration, events, apps)
-
-### Day 5-14 — Jun 19-29 🔜
-- Dashboard detail views, confidence badges, timeline
-- Inference pipeline (LLM service, prompt builder, intent parser) 🔄 implemented
-- Unit/integration tests, BPO/Riwi demo scenarios
-- Final dry run + stakeholder presentation
-
----
-
 ## Quick Start
 
 ### Prerequisites
@@ -69,22 +22,28 @@ cd dashboard && npm install && cd ..
 npm install
 ```
 
-### Run everything
+### Run Modes
 
-```bash
-npm run dev
-```
+| Mode | Command | What Runs | Port(s) | Use Case |
+|------|---------|-----------|---------|----------|
+| **Full stack (dev)** | `npm run dev` | Backend + Dashboard | 8002, 5173 | Daily development |
+| **Backend only** | `npm run backend` | FastAPI + auto-reload | 8002 | API work, testing |
+| **Frontend only** | `npm run dashboard:dev` | Vite dev server | 5173 | UI work (needs backend running) |
+| **Capture agent** | `npm run capture` | Python agent → API | — | Real monitoring (needs backend) |
+| **Seed test data** | `npm run seed` | SQLite ← sample sessions | — | Dashboard dev without agent |
+| **Simulate events** | `npm run simulate` | HTTP → API → SQLite | — | Test inference pipeline |
+| **DB viewer (sqlite-web)** | `cd infrastructure/db-mvp && docker compose up -d` | Web UI for SQLite | 8081 | Browse raw tables, run SQL |
 
-| Service | URL | Notes |
-|---|---|---|
-| Backend API | `http://localhost:8002` | FastAPI with auto-reload |
-| Swagger Docs | `http://localhost:8002/docs` | Interactive API documentation |
-| Dashboard | `http://localhost:5173` | React dev server, proxies `/api` to backend |
+### Database (SQLite) — Auto-Created
+
+The database file `backend/data/insight_monitor.db` is **auto-created** when the backend starts for the first time (via `Database._init_schema()` in `backend/infrastructure/db/sqlite/database.py`). No separate database server is needed.
+
+> **Note**: The `infrastructure/db-mvp/` docker-compose starts **sqlite-web** (a web UI viewer at `http://localhost:8081`), **NOT a database server**. It mounts the existing SQLite file for inspection.
 
 ### Load test data
 
 ```bash
-npm run seed        # Creates 2 sample sessions in SQLite
+npm run seed        # Creates sample sessions in SQLite
 npm run simulate    # Sends simulated Riwi/BPO events to the API
 ```
 
@@ -121,7 +80,8 @@ npm run simulate    # Sends simulated Riwi/BPO events to the API
 │   └── vite.config.ts    Dev server on :5173, proxies /api → :8002
 │
 ├── scripts/              simulate_session.py, seed_db.py, run-backend.sh
-├── frontend/             Legacy reference (see docs/development/legacy-frontend.md)
+├── frontend/             ⚠️ LEGACY — AI Support Desk (Vanilla JS, NOT Insight Monitor)
+│                         See docs/development/legacy-frontend.md
 ├── docs/                 Technical documentation
 ├── .env.example
 └── package.json          Root scripts (npm run dev = both services)
@@ -158,6 +118,24 @@ Full interactive docs at `http://localhost:8002/docs`.
 | `npm run simulate` | Simulate Riwi/BPO activity events |
 | `npm run capture` | Start the capture agent (screenshots + input monitor) |
 | `npm run dashboard:build` | Production build of dashboard |
+| `npm run generate:types` | Generate TS types from Pydantic models |
+
+---
+
+## Real-Time Monitoring: What You See Where
+
+| Component | Interface | What's Visible | Refresh / Frequency |
+|-----------|-----------|----------------|---------------------|
+| **Dashboard** | `http://localhost:5173` | Live agent status (green/red), sessions table with: status, start time, duration, event count, apps, inferred type, goal, confidence | Auto-polls every **10 seconds** |
+| **Capture Agent** | Terminal (`npm run capture`) | Startup confirmation, each event sent (window_focus, screenshot, input_activity) — logged at INFO level | Continuous (window/input every 5s, screenshot every 30s) |
+| **Backend API** | Terminal (`npm run backend`) | Uvicorn access logs (HTTP requests), startup banner | Per request + background task cycles |
+| **sqlite-web** | `http://localhost:8081` (after `docker compose up -d` in `infrastructure/db-mvp/`) | Raw tables: `raw_events`, `sessions`, `intent_records` — run SQL, export CSV | Real-time (reads DB file directly) |
+
+### Typical Development Flow
+1. **Start backend + dashboard**: `npm run dev` → see dashboard at :5173
+2. **Start capture agent**: `npm run capture` (separate terminal) → see events being sent
+3. **Watch dashboard**: Sessions appear as agent sends events → session builder groups them → inference runs → type/goal/confidence populate
+4. **Debug data**: Open sqlite-web at :8081 to query raw tables
 
 ---
 

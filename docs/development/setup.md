@@ -26,22 +26,32 @@ cd ..
 npm install
 ```
 
-## Run everything
+## Run Modes
 
-```bash
-npm run dev
-```
+| Mode | Command | What Runs | Port(s) | Use Case |
+|------|---------|-----------|---------|----------|
+| **Full stack (dev)** | `npm run dev` | Backend + Dashboard | 8002, 5173 | Daily development |
+| **Backend only** | `npm run backend` | FastAPI + auto-reload | 8002 | API work, testing |
+| **Frontend only** | `npm run dashboard:dev` | Vite dev server | 5173 | UI work (needs backend running) |
+| **Capture agent** | `npm run capture` | Python agent → API | — | Real monitoring (needs backend) |
+| **Seed test data** | `npm run seed` | SQLite ← sample sessions | — | Dashboard dev without agent |
+| **Simulate events** | `npm run simulate` | HTTP → API → SQLite | — | Test inference pipeline |
+| **DB viewer (sqlite-web)** | `cd infrastructure/db-mvp && docker compose up -d` | Web UI for SQLite | 8081 | Browse raw tables, run SQL |
 
-| Service | URL | Notes |
-|---|---|---|
-| Backend API | `http://localhost:8002` | FastAPI with auto-reload |
-| Swagger Docs | `http://localhost:8002/docs` | Interactive API documentation |
-| Dashboard | `http://localhost:5173` | React dev server, proxies `/api` to backend |
+## Database (SQLite) — Auto-Created
+
+The database file `backend/data/insight_monitor.db` is **auto-created** when the backend starts for the first time (via `Database._init_schema()` in `backend/infrastructure/db/sqlite/database.py`). No separate database server is needed.
+
+> **Note**: The `infrastructure/db-mvp/` docker-compose starts **sqlite-web** (a web UI viewer at `http://localhost:8081`), **NOT a database server**. It mounts the existing SQLite file for inspection.
+
+## Legacy Frontend Notice
+
+⚠️ **Note**: The `frontend/` directory contains a legacy "AI Support Desk" application (Vanilla JS) that is **not part of Insight Monitor**. It is kept for reference only. The current dashboard is in `dashboard/` (React + TypeScript + Tailwind). See [legacy-frontend.md](legacy-frontend.md).
 
 ## Load test data
 
 ```bash
-npm run seed        # Creates 2 sample sessions in SQLite
+npm run seed        # Creates sample sessions in SQLite
 npm run simulate    # Sends simulated Riwi/BPO events to the API
 ```
 
@@ -55,3 +65,5 @@ npm run simulate    # Sends simulated Riwi/BPO events to the API
 | `npm run seed` | Load test sessions into SQLite |
 | `npm run simulate` | Simulate Riwi/BPO activity events |
 | `npm run dashboard:build` | Production build of dashboard |
+| `npm run capture` | Start the capture agent |
+| `npm run generate:types` | Generate TS types from Pydantic models |
