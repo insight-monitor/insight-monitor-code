@@ -106,7 +106,7 @@ class PromptBuilder:
     """Builds structured prompts for session classification."""
 
     def __init__(self, user_context: dict | None = None):
-        self.user_context = user_context or {}
+        self.user_context = user_context or {}  # Optional
 
     def build(self, session: dict, events: list[dict]) -> str:
         """Construct the final prompt from system instruction, environmental data, and output schema."""
@@ -130,7 +130,6 @@ class PromptBuilder:
         return "\n".join(parts)
 
     def _build_environmental_context(self, session: dict, events: list[dict]) -> str:
-        """Format session metrics and recent events as plain text."""
         lines = []
         lines.append(f"Session ID: {session.get('id', 'unknown')}")
         lines.append(f"Start time: {session.get('start_time', 'unknown')}")
@@ -166,7 +165,6 @@ class PromptBuilder:
         return "\n".join(lines)
 
     def _build_user_context(self) -> str:
-        """Serialize user context dictionary to markdown list format."""
         if not self.user_context:
             return ""
         lines = []

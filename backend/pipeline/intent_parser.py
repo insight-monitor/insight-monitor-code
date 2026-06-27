@@ -21,19 +21,7 @@ class IntentParser:
         session_id: str,
         raw_text: str | None = None,
     ) -> IntentRecord:
-        """Validate LLM output and instantiate the domain IntentRecord entity.
-
-        Args:
-            llm_response: Parsed JSON response from the LLM.
-            session_id: Identifier of the analyzed session.
-            raw_text: Optional raw LLM response text for debug traceability.
-
-        Returns:
-            Validated IntentRecord domain entity.
-
-        Raises:
-            IntentParserError: If response is missing required fields or has invalid types.
-        """
+        """Validate LLM output and instantiate the domain IntentRecord entity."""
         self._validate_response(llm_response)
 
         record = IntentRecord(
@@ -65,14 +53,7 @@ class IntentParser:
 
     @staticmethod
     def _validate_response(response: dict[str, Any]) -> None:
-        """Check presence and types of all required output properties.
-
-        Args:
-            response: Parsed LLM response dictionary.
-
-        Raises:
-            IntentParserError: If required fields are missing or have invalid types.
-        """
+        """Check presence and types of all required output properties."""
         required = [
             "session_type", "goal", "goal_confidence",
             "category", "category_confidence", "evidence",
@@ -113,7 +94,6 @@ class IntentParser:
 
     @staticmethod
     def _safe_float(value: Any, default: float | None = None) -> float | None:
-        """Convert value to float safely, returning default on failure."""
         if value is None:
             return default
         try:

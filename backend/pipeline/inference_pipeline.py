@@ -18,15 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class InferencePipeline:
-    """Concrete orchestrator that executes the session inference pipeline using SQLite repositories.
-
-    Args:
-        db: Database connection instance.
-        user_context: Optional user preferences and roles context.
-        llm_service: LLM orchestration service (default: new LLMService).
-        prompt_builder: Prompt construction component (default: new PromptBuilder).
-        intent_parser: LLM response parsing component (default: new IntentParser).
-    """
+    """Concrete orchestrator that executes the session inference pipeline using SQLite repositories."""
 
     def __init__(
         self,
@@ -45,17 +37,7 @@ class InferencePipeline:
         self.intent_parser = intent_parser or IntentParser()
 
     def process_session(self, session_id: str) -> IntentRecord | None:
-        """Process a single session through the inference pipeline.
-
-        Fetches the session, verifies idempotency, queries events, requests LLM analysis,
-        parses the response, and persists the output record.
-
-        Args:
-            session_id: Identifier of the session to process.
-
-        Returns:
-            Created IntentRecord if successful, None if skipped or failed.
-        """
+        """Fetch the session, verify idempotency, query events, request analysis, and persist the output record."""
         session = self.session_repo.find_by_id(session_id)
         if not session:
             logger.warning("Session %s not found for inference", session_id)
@@ -105,11 +87,7 @@ class InferencePipeline:
         return intent
 
     def process_closed_sessions(self) -> int:
-        """Search all sessions with status 'closed' and perform inference on each.
-
-        Returns:
-            Number of sessions successfully processed.
-        """
+        """Search all sessions with status 'closed' and perform inference on each."""
         closed_sessions = self.session_repo.find_all(status="closed")
         processed = 0
 

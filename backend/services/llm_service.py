@@ -16,15 +16,7 @@ class LLMServiceError(Exception):
 
 
 class LLMService:
-    """Service class coordinating LLM prompt completion requests.
-
-    Args:
-        provider: LLM provider name ("openai" or "gemini").
-        api_key: API key for the provider.
-        model: Model identifier to use.
-        timeout_sec: Request timeout in seconds.
-        max_retries: Maximum retry attempts for failed calls.
-    """
+    """Service class coordinating LLM prompt completion requests."""
 
     def __init__(
         self,
@@ -42,14 +34,7 @@ class LLMService:
         self._client: Any = None
 
     def _get_client(self) -> Any:
-        """Instantiate and cache the API client based on chosen LLM provider.
-
-        Returns:
-            Provider-specific client instance.
-
-        Raises:
-            LLMServiceError: If API key is missing or provider is unsupported.
-        """
+        """Instantiate and cache the API client based on chosen LLM provider."""
         if self._client is not None:
             return self._client
 
@@ -71,17 +56,7 @@ class LLMService:
         return self._client
 
     def generate(self, prompt: str) -> str:
-        """Submit the prompt payload with retry attempts using exponential backoff.
-
-        Args:
-            prompt: Formatted prompt string to send to the LLM.
-
-        Returns:
-            Raw response text from the LLM.
-
-        Raises:
-            LLMServiceError: If all retry attempts fail.
-        """
+        """Submit the prompt payload with retry attempts using exponential backoff."""
         last_error: Exception | None = None
 
         for attempt in range(1, self.max_retries + 1):
@@ -124,9 +99,6 @@ class LLMService:
     def generate_structured(self, prompt: str) -> tuple[str, dict[str, Any]]:
         """Process generation response text and format it as structured JSON dictionary.
 
-        Args:
-            prompt: Formatted prompt string to send to the LLM.
-
         Returns:
             Tuple of (raw_response_text, parsed_json_dict).
         """
@@ -136,17 +108,7 @@ class LLMService:
 
     @staticmethod
     def _parse_json_response(raw: str) -> dict[str, Any]:
-        """Strip markdown fences if present and deserialize clean string to dictionary.
-
-        Args:
-            raw: Raw response text from the LLM.
-
-        Returns:
-            Parsed JSON dictionary.
-
-        Raises:
-            LLMServiceError: If JSON parsing fails.
-        """
+        """Strip markdown fences if present and deserialize clean string to dictionary."""
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`")
