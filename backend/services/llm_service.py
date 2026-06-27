@@ -1,3 +1,5 @@
+"""LLM service orchestrating prompt completion requests with retry logic."""
+
 import json
 import logging
 import time
@@ -9,10 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class LLMServiceError(Exception):
+    """Exception raised when the LLM call fails or returns non-parseable output."""
     pass
 
 
 class LLMService:
+    """Service class coordinating LLM prompt completion requests."""
+
     def __init__(
         self,
         provider: str | None = None,
@@ -29,6 +34,7 @@ class LLMService:
         self._client: Any = None
 
     def _get_client(self) -> Any:
+        """Instantiate and cache the API client based on chosen LLM provider."""
         if self._client is not None:
             return self._client
 
@@ -50,6 +56,7 @@ class LLMService:
         return self._client
 
     def generate(self, prompt: str) -> str:
+        """Submit the prompt payload with retry attempts using exponential backoff."""
         last_error: Exception | None = None
 
         for attempt in range(1, self.max_retries + 1):
@@ -90,12 +97,18 @@ class LLMService:
         )
 
     def generate_structured(self, prompt: str) -> tuple[str, dict[str, Any]]:
+        """Process generation response text and format it as structured JSON dictionary.
+
+        Returns:
+            Tuple of (raw_response_text, parsed_json_dict).
+        """
         raw = self.generate(prompt)
         parsed = self._parse_json_response(raw)
         return raw, parsed
 
     @staticmethod
     def _parse_json_response(raw: str) -> dict[str, Any]:
+        """Strip markdown fences if present and deserialize clean string to dictionary."""
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`")
