@@ -1,24 +1,27 @@
-import logging
+"""LLM response parser for intent classification output."""
+
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
 from backend.domain.entities.intent_record import IntentRecord
 
-logger = logging.getLogger(__name__)
-
 
 class IntentParserError(Exception):
+    """Exception thrown when the LLM structured response is invalid or missing required keys."""
     pass
 
 
 class IntentParser:
+    """Parser that validates and transforms LLM response to IntentRecord."""
+
     def parse(
         self,
         llm_response: dict[str, Any],
         session_id: str,
         raw_text: str | None = None,
     ) -> IntentRecord:
+        """Validate LLM output and instantiate the domain IntentRecord entity."""
         self._validate_response(llm_response)
 
         record = IntentRecord(
@@ -50,6 +53,7 @@ class IntentParser:
 
     @staticmethod
     def _validate_response(response: dict[str, Any]) -> None:
+        """Check presence and types of all required output properties."""
         required = [
             "session_type", "goal", "goal_confidence",
             "category", "category_confidence", "evidence",

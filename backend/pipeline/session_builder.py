@@ -1,3 +1,5 @@
+"""Session builder: groups raw tracked events into sequential workspace sessions."""
+
 import json
 import logging
 import os
@@ -9,18 +11,22 @@ from backend.infrastructure.db.sqlite.repositories import EventRepository, Sessi
 
 logger = logging.getLogger(__name__)
 
+# Allowed time interval in minutes before an inactive session gets automatically closed
 INACTIVITY_THRESHOLD = int(os.getenv("INACTIVITY_THRESHOLD_MINUTES", "8"))
+# Delay in seconds between checking for newly generated activity events
 POLL_INTERVAL = int(os.getenv("SESSION_BUILDER_POLL_SECONDS", "30"))
 
 
 class SessionBuilder:
+    """Builder class grouping raw tracked events into sequential workspace sessions."""
+
     def __init__(self, db: Database):
         self.db = db
         self.event_repo = EventRepository(db)
         self.session_repo = SessionRepository(db)
         self._running = False
 
-    def start(self):
+    def start(self) -> None:
         self._running = True
         logger.info(
             "Session builder started (inactivity_threshold=%dmin, poll=%ds)",
@@ -28,11 +34,11 @@ class SessionBuilder:
             POLL_INTERVAL,
         )
 
-    def stop(self):
+    def stop(self) -> None:
         self._running = False
         logger.info("Session builder stopped")
 
-    def process_pending_events(self):
+    def process_pending_events(self) -> None:
         unassigned = self.db.fetch_all(
             "SELECT * FROM raw_events WHERE session_id IS NULL ORDER BY timestamp ASC"
         )
@@ -100,14 +106,14 @@ class SessionBuilder:
         logger.info("Created session %s starting at %s", session_id, first_event["timestamp"])
         return session_id
 
-    def _assign_event(self, event: dict, session: dict):
+    def _assign_event(self, event: dict, session: dict) -> None:
         self.db.execute(
             "UPDATE raw_events SET session_id = ? WHERE event_id = ?",
             (session["id"], event["event_id"]),
         )
         self.db.commit()
 
-    def _update_session_on_event(self, session: dict, event: dict):
+    def _update_session_on_event(self, session: dict, event: dict) -> None:
         event_count = (session.get("event_count") or 0) + 1
         screenshot_count = (session.get("screenshot_count") or 0) + (
             1 if event.get("event_type") == "screenshot" else 0
@@ -148,7 +154,7 @@ class SessionBuilder:
 
         self.session_repo.update(session["id"], updates)
 
-    def _check_close(self, session: dict):
+    def _check_close(self, session: dict) -> None:
         if not session.get("end_time"):
             return
 
@@ -169,7 +175,7 @@ class SessionBuilder:
                 INACTIVITY_THRESHOLD,
             )
 
-    def close_session(self, session_id: str):
+    def close_session(self, session_id: str) -> None:
         session = self.session_repo.find_by_id(session_id)
         if not session:
             logger.warning("Session %s not found for close", session_id)
@@ -190,7 +196,7 @@ class SessionBuilder:
             return datetime.now(timezone.utc)
 
 
-def run_session_builder_once():
+def run_session_builder_once() -> None:
     db = Database()
     builder = SessionBuilder(db)
     builder.process_pending_events()

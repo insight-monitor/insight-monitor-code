@@ -18,7 +18,7 @@ class TestPromptBuilder:
         prompt = pb.build(session, [])
         assert isinstance(prompt, str)
         assert "SYSTEM INSTRUCTION" in prompt
-        assert "RIWI CATEGORIES" in prompt
+        assert "SESSION TYPE" in prompt
 
     def test_build_includes_session_info(self):
         pb = PromptBuilder()

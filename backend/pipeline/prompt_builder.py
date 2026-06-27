@@ -1,3 +1,5 @@
+"""Prompt builder for LLM intent classification pipeline."""
+
 import json
 
 
@@ -101,10 +103,13 @@ OUTPUT_SCHEMA = {
 
 
 class PromptBuilder:
+    """Builds structured prompts for session classification."""
+
     def __init__(self, user_context: dict | None = None):
-        self.user_context = user_context or {}
+        self.user_context = user_context or {}  # Optional
 
     def build(self, session: dict, events: list[dict]) -> str:
+        """Construct the final prompt from system instruction, environmental data, and output schema."""
         env_context = self._build_environmental_context(session, events)
         user_ctx = self._build_user_context()
 
