@@ -7,23 +7,13 @@ from backend.config import settings
 
 
 class Database:
-    _instance: "Database | None" = None
-    _lock = threading.Lock()
-
     def __init__(self, db_path: str | None = None):
         self.db_path = db_path or settings.db_path
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
         self._local = threading.local()
+        self._init_schema()
 
-    @classmethod
-    def get_instance(cls, db_path: str | None = None) -> "Database":
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = cls(db_path)
-                    cls._instance._init_schema()
-        return cls._instance
 
     def _get_connection(self) -> sqlite3.Connection:
         if not hasattr(self._local, "conn") or self._local.conn is None:
@@ -156,6 +146,3 @@ class Database:
             self._local.conn.close()
             self._local.conn = None
 
-    @classmethod
-    def reset(cls):
-        cls._instance = None

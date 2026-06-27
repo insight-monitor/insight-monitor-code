@@ -1,3 +1,4 @@
+import pytest
 import sys
 from pathlib import Path
 from uuid import uuid4
@@ -10,9 +11,10 @@ from backend.services.llm_service import LLMService, LLMServiceError
 from backend.pipeline.prompt_builder import PromptBuilder
 from backend.pipeline.intent_parser import IntentParser, IntentParserError
 from backend.pipeline.inference_pipeline import InferencePipeline
-from backend.storage.database import Database
+from backend.infrastructure.db.sqlite.database import Database
 
 
+@pytest.mark.unit
 def test_llm_parse_json_response():
     valid = '{"a": 1}'
     assert LLMService._parse_json_response(valid) == {"a": 1}
@@ -28,12 +30,14 @@ def test_llm_parse_json_response():
         pass
 
 
+@pytest.mark.unit
 def test_llm_service_init():
     svc = LLMService(api_key="dummy_key")
     assert svc.api_key == "dummy_key"
     assert svc.model is not None
 
 
+@pytest.mark.unit
 def test_prompt_builder_build():
     pb = PromptBuilder()
     session = {
@@ -57,10 +61,15 @@ def test_prompt_builder_build():
     prompt = pb.build(session, events)
     assert isinstance(prompt, str)
     assert "SYSTEM INSTRUCTION" in prompt
-    assert "RIWI CATEGORIES" in prompt
+    assert "SESSION TYPE (the primary classification)" in prompt
+    assert "CATEGORY (a secondary, more specific classification)" in prompt
     assert "test-session" in prompt
+    assert "OUTPUT FORMAT" in prompt
+    assert "session_type" in prompt
+    assert "goal_confidence" in prompt
 
 
+@pytest.mark.unit
 def test_intent_parser_success():
     parser = IntentParser()
     response = {
@@ -78,6 +87,7 @@ def test_intent_parser_success():
     assert record.session_id == "sess-123"
 
 
+@pytest.mark.unit
 def test_intent_parser_missing_required():
     parser = IntentParser()
     try:
@@ -87,6 +97,7 @@ def test_intent_parser_missing_required():
         pass
 
 
+@pytest.mark.unit
 def test_intent_parser_invalid_type():
     parser = IntentParser()
     try:
@@ -104,12 +115,12 @@ def test_intent_parser_invalid_type():
         pass
 
 
+@pytest.mark.integration
 def test_inference_pipeline_process_session():
-    Database.reset()
-    db = Database.get_instance(":memory:")
+    db = Database(":memory:")
 
     session_repo = __import__(
-        "backend.storage.repositories", fromlist=["SessionRepository", "EventRepository"]
+        "backend.infrastructure.db.sqlite.repositories", fromlist=["SessionRepository", "EventRepository"]
     )
     SessionRepo = session_repo.SessionRepository
     EventRepo = session_repo.EventRepository
@@ -185,8 +196,6 @@ def test_inference_pipeline_process_session():
     assert stored is not None
     assert stored["session_type"] == "applied_learning"
     assert stored["goal"] == "Build API endpoint"
-
-    Database.reset()
 
 
 if __name__ == "__main__":

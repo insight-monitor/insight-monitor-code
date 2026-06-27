@@ -1,5 +1,5 @@
 """Validate Pydantic models against simulated JSON data."""
-import json
+import pytest
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -8,9 +8,11 @@ import sys
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
-from backend.models.raw_event import RawEvent, EventType
-from backend.models.session_context import SessionContext
-from backend.models.intent_record import IntentRecord, SessionType
+from backend.domain.entities.raw_event import RawEvent, EventType
+from backend.domain.entities.session_context import SessionContext
+from backend.domain.entities.intent_record import IntentRecord, SessionType
+
+pytestmark = pytest.mark.unit
 
 
 def test_raw_event():
@@ -32,9 +34,11 @@ def test_raw_event():
         "session_boundary_type": None,
     }
     event = RawEvent(**data)
+    assert event.event_id == data["event_id"]
+    assert event.event_type == EventType.WINDOW_FOCUS
+    assert event.process_name == "code"
     dumped = event.model_dump(mode="json")
-    print("[OK] RawEvent — all fields valid")
-    return event
+    assert dumped["event_id"] == data["event_id"]
 
 
 def test_session_context():
@@ -52,9 +56,10 @@ def test_session_context():
         "status": "closed",
     }
     session = SessionContext(**data)
-    dumped = session.model_dump(mode="json")
-    print("[OK] SessionContext — all fields valid")
-    return session
+    assert session.session_id == data["session_id"]
+    assert session.status == "closed"
+    assert session.event_count == 47
+    assert session.avg_clicks_per_min == 8.5
 
 
 def test_intent_record():
@@ -89,9 +94,11 @@ def test_intent_record():
         "raw_llm_response": None,
     }
     intent = IntentRecord(**data)
-    dumped = intent.model_dump(mode="json")
-    print("[OK] IntentRecord — all fields valid")
-    return intent
+    assert intent.record_id == data["record_id"]
+    assert intent.session_type == "applied_learning"
+    assert intent.goal_confidence == 0.85
+    assert len(intent.friction_points) == 2
+    assert len(intent.evidence) == 3
 
 
 def test_intent_record_literals():

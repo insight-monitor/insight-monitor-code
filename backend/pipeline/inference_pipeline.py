@@ -1,17 +1,25 @@
+"""Intent inference pipeline orchestrating LLM classification and session building."""
+
 import logging
 from typing import Any
 
-from backend.models.intent_record import IntentRecord
+from backend.domain.entities.intent_record import IntentRecord
 from backend.pipeline.intent_parser import IntentParser, IntentParserError
 from backend.pipeline.prompt_builder import PromptBuilder
 from backend.services.llm_service import LLMService, LLMServiceError
-from backend.storage.database import Database
-from backend.storage.repositories import EventRepository, IntentRepository, SessionRepository
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import (
+    EventRepository,
+    IntentRepository,
+    SessionRepository,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class InferencePipeline:
+    """Concrete orchestrator that executes the session inference pipeline using SQLite repositories."""
+
     def __init__(
         self,
         db: Database,
@@ -29,6 +37,7 @@ class InferencePipeline:
         self.intent_parser = intent_parser or IntentParser()
 
     def process_session(self, session_id: str) -> IntentRecord | None:
+        """Fetch the session, verify idempotency, query events, request analysis, and persist the output record."""
         session = self.session_repo.find_by_id(session_id)
         if not session:
             logger.warning("Session %s not found for inference", session_id)
@@ -78,6 +87,7 @@ class InferencePipeline:
         return intent
 
     def process_closed_sessions(self) -> int:
+        """Search all sessions with status 'closed' and perform inference on each."""
         closed_sessions = self.session_repo.find_all(status="closed")
         processed = 0
 

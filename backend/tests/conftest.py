@@ -1,15 +1,25 @@
-from contextlib import asynccontextmanager
+"""
+ARCH-11: conftest.py refactorizado.
+- `client` usa DI override de FastAPI con repos InMemory (cero disco, cero SQLite).
+- `in_memory_repos` fixture provee repos limpios para tests unitarios de Use Cases.
+"""
 
 import pytest
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from backend.config import settings
-from backend.storage.database import Database
-from backend.storage.repositories import (
-    EventRepository,
-    SessionRepository,
-    IntentRepository,
+from backend.infrastructure.db.in_memory.repositories import (
+    InMemoryEventRepository,
+    InMemorySessionRepository,
+    InMemoryIntentRepository,
+)
+from backend.infrastructure.di import (
+    get_event_repository,
+    get_session_repository,
+    get_intent_repository,
+    get_ingest_event_use_case,
+    get_get_session_use_case,
 )
 
 
@@ -18,25 +28,46 @@ async def noop_lifespan(_app: FastAPI):
     yield
 
 
-@pytest.fixture
-def client(tmp_path):
-    Database.reset()
-    db_path = str(tmp_path / "test.db")
+# ── Fixture: repos en memoria para tests unitarios de Use Cases ───────────────
 
-    old_path = settings.db_path
-    settings.db_path = db_path
+@pytest.fixture()
+def event_repo():
+    return InMemoryEventRepository()
 
-    fresh_db = Database.get_instance()
 
-    import backend.routes.events
-    import backend.routes.sessions
+@pytest.fixture()
+def session_repo():
+    return InMemorySessionRepository()
 
-    backend.routes.events.event_repo = EventRepository(fresh_db)
-    backend.routes.sessions.session_repo = SessionRepository(fresh_db)
-    backend.routes.sessions.event_repo = EventRepository(fresh_db)
-    backend.routes.sessions.intent_repo = IntentRepository(fresh_db)
+
+@pytest.fixture()
+def intent_repo():
+    return InMemoryIntentRepository()
+
+
+# ── Fixture: TestClient con FastAPI overrides (cero disco) ────────────────────
+
+@pytest.fixture()
+def client():
+    """
+    Cliente HTTP que usa repositorios InMemory inyectados via FastAPI Depends override.
+    Cada test obtiene una app limpia — zero shared state.
+    """
+    mem_event = InMemoryEventRepository()
+    mem_session = InMemorySessionRepository()
+    mem_intent = InMemoryIntentRepository()
 
     from backend.main import app
+    from backend.application.use_cases.ingest_event import IngestEventUseCase
+    from backend.application.use_cases.get_session import GetSessionUseCase
+
+    app.dependency_overrides[get_event_repository] = lambda: mem_event
+    app.dependency_overrides[get_session_repository] = lambda: mem_session
+    app.dependency_overrides[get_intent_repository] = lambda: mem_intent
+    app.dependency_overrides[get_ingest_event_use_case] = lambda: IngestEventUseCase(mem_event)
+    app.dependency_overrides[get_get_session_use_case] = lambda: GetSessionUseCase(
+        mem_session, mem_event, mem_intent
+    )
 
     original_lifespan = app.router.lifespan_context
     app.router.lifespan_context = noop_lifespan
@@ -44,6 +75,5 @@ def client(tmp_path):
     with TestClient(app) as c:
         yield c
 
+    app.dependency_overrides.clear()
     app.router.lifespan_context = original_lifespan
-    settings.db_path = old_path
-    Database.reset()

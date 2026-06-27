@@ -12,7 +12,7 @@ from backend.routes.events import router as events_router
 from backend.routes.sessions import router as sessions_router
 from backend.pipeline.inference_pipeline import InferencePipeline
 from backend.pipeline.session_builder import SessionBuilder, POLL_INTERVAL
-from backend.storage.database import Database
+from backend.infrastructure.db.sqlite.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -25,15 +25,15 @@ inference_pipeline: InferencePipeline | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global session_builder, inference_pipeline
-    db = Database.get_instance(settings.db_path)
+    db = Database(settings.db_path)
     session_builder = SessionBuilder(db)
     session_builder.start()
 
-    if settings.gemini_api_key:
+    if settings.api_key:
         inference_pipeline = InferencePipeline(db)
-        logger.info("Inference pipeline initialized (model=%s)", settings.gemini_model)
+        logger.info("Inference pipeline initialized (provider=%s, model=%s)", settings.llm_provider, settings.llm_model)
     else:
-        logger.warning("GEMINI_API_KEY not set — inference pipeline disabled")
+        logger.warning("API_KEY not set — inference pipeline disabled")
 
     sb_task = asyncio.create_task(_run_session_builder())
     ip_task = asyncio.create_task(_run_inference_pipeline())

@@ -1,7 +1,8 @@
 import json
 from typing import Any
 
-from backend.storage.database import Database
+from backend.infrastructure.db.sqlite.database import Database
+from backend.domain.ports.repositories import IEventRepository, ISessionRepository, IIntentRepository
 
 
 def _parse_json_fields(row: dict[str, Any], fields: list[str]) -> dict[str, Any]:
@@ -21,7 +22,7 @@ _INTENT_JSON_FIELDS = [
 ]
 
 
-class EventRepository:
+class EventRepository(IEventRepository):
     def __init__(self, db: Database):
         self.db = db
 
@@ -70,8 +71,20 @@ class EventRepository:
             (limit,),
         )
 
+    def find_unassigned(self) -> list[dict]:
+        return self.db.fetch_all(
+            "SELECT * FROM raw_events WHERE session_id IS NULL ORDER BY timestamp ASC"
+        )
 
-class SessionRepository:
+    def assign_to_session(self, event_id: str, session_id: str) -> None:
+        self.db.execute(
+            "UPDATE raw_events SET session_id = ? WHERE event_id = ?",
+            (session_id, event_id),
+        )
+        self.db.commit()
+
+
+class SessionRepository(ISessionRepository):
     def __init__(self, db: Database):
         self.db = db
 
@@ -148,7 +161,7 @@ class SessionRepository:
         return row
 
 
-class IntentRepository:
+class IntentRepository(IIntentRepository):
     def __init__(self, db: Database):
         self.db = db
 

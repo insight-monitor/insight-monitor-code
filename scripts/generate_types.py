@@ -1,78 +1,84 @@
 #!/usr/bin/env python3
 """
-Generate TypeScript types from backend Pydantic models.
-Run: python scripts/generate_types.py
-CI: Fails if generated types differ from committed.
+ARCH-9: Generate TypeScript types from Pydantic models.
+
+Uses datamodel-codegen to generate TypeScript interfaces from backend Pydantic models.
+Output: dashboard/src/api/generated-types.ts
+
+Prerequisites:
+    pip install datamodel-codegen
+    # or: poetry add --group dev datamodel-codegen (in backend/)
 """
+
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-BACKEND_ROOT = Path(__file__).parent.parent / "backend"
-DASHBOARD_API = Path(__file__).parent.parent / "dashboard" / "src" / "api"
-GENERATED_DIR = DASHBOARD_API / "generated"
+
+BACKEND_MODELS_DIR = Path(__file__).parent.parent / "backend" / "domain" / "entities"
+OUTPUT_FILE = Path(__file__).parent.parent / "dashboard" / "src" / "api" / "generated-types.ts"
+
 
 MODELS = [
-    "backend.models.raw_event:RawEvent",
-    "backend.models.session_context:SessionContext",
-    "backend.models.intent_record:IntentRecord",
+    "raw_event.py",
+    "session_context.py",
+    "intent_record.py",
 ]
 
-def main():
-    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Generate each model
-    for model_spec in MODELS:
-        model_name = model_spec.split(":")[-1]
-        output_file = GENERATED_DIR / f"{model_name.lower()}.ts"
+def main() -> int:
+    # Check if datamodel-codegen is available
+    if not shutil.which("datamodel-codegen"):
+        print("Error: datamodel-codegen not found in PATH", file=sys.stderr)
+        print("Install it with: pip install datamodel-codegen", file=sys.stderr)
+        return 1
 
-        result = subprocess.run([
-            "datamodel-codegen",
-            "--input", model_spec,
-            "--input-file-type", "python",
-            "--output", str(output_file),
-            "--output-model-type", "typescript",
-            "--target-python-version", "3.11",
-            "--use-standard-collections",
-            "--use-generic-container-types",
-            "--enable-version-header",
-            "--class-name", model_name,
-        ], capture_output=True, text=True, cwd=BACKEND_ROOT)
+    # Build the command to generate TypeScript from multiple Pydantic files
+    cmd = [
+        "datamodel-codegen",
+        "--input-file-type", "python",
+        "--output", str(OUTPUT_FILE),
+        "--output-model-type", "typescript",
+        "--use-standard-collections",
+        "--use-default-kwarg",
+        "--field-constraints",
+        "--use-schema-description",
+        "--enum-field-as-literal", "all",
+        "--disable-timestamp",
+        "--use-title-as-name",
+        "--wrap-in-class", "false",
+    ]
 
-        if result.returncode != 0:
-            print(f"ERROR generating {model_name}:", file=sys.stderr)
-            print(result.stderr, file=sys.stderr)
-            return 1
+    # Add all model files as input
+    for model in MODELS:
+        model_path = BACKEND_MODELS_DIR / model
+        if model_path.exists():
+            cmd.extend(["--input", str(model_path)])
+        else:
+            print(f"Warning: {model_path} not found", file=sys.stderr)
 
-        print(f"Generated: {output_file}")
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
 
-    # Create index.ts
-    index_content = "// Auto-generated from backend Pydantic models\n"
-    index_content += "// DO NOT EDIT MANUALLY - Run scripts/generate_types.py\n\n"
-    for model_spec in MODELS:
-        model_name = model_spec.split(":")[-1]
-        index_content += f"export * from './{model_name.lower()}';\n"
+    if result.returncode != 0:
+        print(f"Error: {result.stderr}", file=sys.stderr)
+        return result.returncode
 
-    index_file = GENERATED_DIR / "index.ts"
-    index_file.write_text(index_content)
-    print(f"Generated: {index_file}")
+    # Post-process: add header comment
+    header = """// AUTO-GENERATED FROM BACKEND PYDANTIC MODELS
+// DO NOT EDIT MANUALLY - Run: python scripts/generate_types.py
+// Source: backend/domain/entities/*.py
 
-    # Update dashboard/src/api/types.ts to re-export
-    types_file = DASHBOARD_API / "types.ts"
-    types_content = "// Re-exports generated types + frontend-only types\n"
-    types_content += "// Generated types from: backend/models/*.py\n\n"
-    types_content += "export * from './generated';\n\n"
-    types_content += "// Frontend-only types (not in backend)\n"
-    types_content += "export interface UIState {\n"
-    types_content += "  selectedSessionId: string | null;\n"
-    types_content += "  sidebarOpen: boolean;\n"
-    types_content += "  theme: 'dark' | 'light';\n"
-    types_content += "}\n"
+"""
+    content = OUTPUT_FILE.read_text()
+    if not content.startswith("// AUTO-GENERATED"):
+        OUTPUT_FILE.write_text(header + content)
+        print(f"Added header to {OUTPUT_FILE}")
 
-    types_file.write_text(types_content)
-    print(f"Updated: {types_file}")
-
+    print(f"Generated {OUTPUT_FILE}")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

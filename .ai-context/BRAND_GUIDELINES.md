@@ -77,3 +77,26 @@ Mobile (<1024px):
 - Focus visible: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`
 - Color contrast: AA (4.5:1) minimum
 - Keyboard navigable: Tab order logical
+# Brand Guidelines
+
+## Voice & Tone
+- **Professional but accessible**: Technical depth without jargon overload
+- **User-centric**: Always frame features as user benefits
+- **Transparent**: Acknowledge limitations and uncertainties explicitly
+- **No marketing fluff**: Claims must be verifiable
+
+## Terminology
+| Use | Avoid |
+|-----|-------|
+| "Capture agent" | "Monitor", "tracker", "spy" |
+| "Intent inference" | "AI analysis", "profiling" |
+| "Classification" / "Intent record" | "Judgment", "rating", "score" |
+| "Session" | "Work period", "time block" |
+| "Confidence score" | "Accuracy", "certainty" |
+| "Challengeability" | "Appeal", "dispute" |
+
+## Messaging Principles
+1. **Privacy first**: "Your data stays on your machine"
+2. **Context over surveillance**: "We understand *why*, not just *what*"
+3. **Empowerment**: "You control what's shared"
+4. **Honesty**: "We show confidence, not certainty"

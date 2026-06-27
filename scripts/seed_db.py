@@ -5,7 +5,7 @@ Usage:
     python scripts/seed_db.py
 
 Relies on the app's Database._init_schema() to ensure correct table schemas.
-Run the backend at least once before seeding, or call Database.get_instance()
+Run the backend at least once before seeding, or call Database()
 which triggers schema creation automatically.
 """
 
@@ -18,8 +18,8 @@ from pathlib import Path
 # Ensure backend package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from backend.storage.database import Database
-from backend.storage.repositories import SessionRepository, IntentRepository
+from backend.infrastructure.db.sqlite.database import Database
+from backend.infrastructure.db.sqlite.repositories import SessionRepository, IntentRepository
 
 
 DB_PATH = Path("./data/insight_monitor.db")
@@ -28,7 +28,7 @@ DB_PATH = Path("./data/insight_monitor.db")
 def seed():
     Path("./data").mkdir(exist_ok=True)
 
-    db = Database.get_instance(str(DB_PATH))
+    db = Database(str(DB_PATH))
     session_repo = SessionRepository(db)
     intent_repo = IntentRepository(db)
 
