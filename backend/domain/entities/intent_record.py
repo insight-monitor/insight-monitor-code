@@ -1,8 +1,10 @@
-from typing import Literal            # Standard library type hinting for literal values
-from pydantic import BaseModel, Field, ConfigDict # Pydantic types and validators
-from datetime import datetime         # Standard library date and time representation
+"""Intent record domain entity representing inferred session analysis."""
 
-# Supported classification types for session analysis
+from typing import Literal
+from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime
+
+
 SessionType = Literal[
     "skill_development",   # Learning a new skill or theoretical concept
     "applied_learning",    # Practical implementation of code or design
@@ -12,29 +14,29 @@ SessionType = Literal[
 ]
 
 
-# Analytical record representing the inferred intent of a session
 class IntentRecord(BaseModel):
-    model_config = ConfigDict(from_attributes=True)  # Enables mapping from database ORM attributes
+    """Analytical record representing the inferred intent of a session."""
+    model_config = ConfigDict(from_attributes=True)
 
-    record_id: str             # Unique UUID identifier for this analysis record
-    session_id: str            # Identifier of the analyzed session
-    timestamp: datetime        # UTC date and time of the analysis execution
+    record_id: str
+    session_id: str
+    timestamp: datetime
 
-    session_type: SessionType  # Main classification code of the session
-    goal: str                  # Principal objective text inferred by the LLM
-    goal_confidence: float = Field(..., ge=0.0, le=1.0)  # Meta confidence level [0-1]
+    session_type: SessionType
+    goal: str
+    goal_confidence: float = Field(..., ge=0.0, le=1.0)
 
-    friction_points: list[str] = []          # List of obstacles or issues detected
-    friction_confidence: float | None = None  # Confidence score for the detected friction
+    friction_points: list[str] = []
+    friction_confidence: float | None = None
 
-    category: str = "ambiguous"              # Specific topic or subcategory tag
-    category_confidence: float = Field(default=0.0, ge=0.0, le=1.0)  # Confidence score for subcategory
+    category: str = "ambiguous"
+    category_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
-    tags: list[str] = []          # Keywords representing tools and topics
-    evidence: list[str] = []      # Factual items supporting the classification
-    alternatives: list[str] = []  # Secondary interpretation options
+    tags: list[str] = []
+    evidence: list[str] = []
+    alternatives: list[str] = []
 
-    app_summary: dict = Field(default_factory=dict)  # Process statistics and switches summary
-    raw_timeline_summary: str = ""  # Narrative timeline description of the activity
+    app_summary: dict = Field(default_factory=dict)
+    raw_timeline_summary: str = ""
 
-    raw_llm_response: str | None = None  # Complete raw string response from the LLM
+    raw_llm_response: str | None = None

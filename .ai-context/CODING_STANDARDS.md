@@ -8,10 +8,11 @@
 - **Async**: Use `async/await` for I/O. Background tasks in `main.py` lifespan.
 - **No Globals**: No module-level singletons. Use DI container.
 - **Error Handling**: Custom exceptions per module. No bare `except:`.
-- **Docstrings**: Google style for public APIs (classes, functions, methods).
+- **Docstrings**: Google style for public APIs (classes, functions, methods) **when they add value** — see guidance below.
 - **Module Docstrings**: Required at top of every file — one sentence describing purpose and key exports.
 - **Private Methods**: Docstring only if logic is non-obvious; prefer self-documenting names.
 - **Inline Comments**: Rare. Explain *why* (constraints, business rules), not *what*.
+- **Data Classes / DTOs / Pydantic Models**: Skip per-attribute docstrings. Type hints + clear naming are sufficient. A one-line class docstring describing *what the entity represents* is enough.
 
 ## TypeScript (Frontend)
 - **Strict Mode**: `tsconfig.json` strict: true
