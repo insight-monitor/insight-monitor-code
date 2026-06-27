@@ -97,3 +97,14 @@ The Clean Architecture migration (ARCH-0) addressed several anti-patterns. What 
 | CLI agent startup | Systemd service / Windows service | Agent must survive reboots and user logouts |
 | Pipeline modules (`pipeline/`) | Full migration to use case classes | As each pipeline function is absorbed by a use case |
 | Synchronous inference (ADR-0003) | Celery/Redis for async queue | When inference volume exceeds sync capacity |
+
+## Honest Status: What's Actually Done vs Planned
+
+| Item | Planned | Actually Done |
+|---|---|---|
+| **Database: SQLite → MySQL/PostgreSQL** | Phase 2 multi-tenant | **NOT DONE** — SQLite is the only running database. `infrastructure/db-enterprise/` is a reference schema only. |
+| **Pipeline → Use Cases** | ARCH-0 migration | **PARTIAL** — Use cases exist and used by API routes, but background tasks in `main.py` still use legacy `pipeline/` classes directly. |
+| **Async inference** | Celery/Redis post-MVP | **NOT DONE** — Inference runs synchronously in both legacy pipeline and use cases. |
+| **Capture agent as systemd service** | Post-MVP deployment | **NOT DONE** — Agent runs as CLI process (`npm run capture`). |
+
+The Clean Architecture ports (`IEventRepository`, `ISessionRepository`, `IIntentRepository`) are implemented and allow the database swap — but the swap has not been triggered because multi-tenant requirements haven't materialized.
