@@ -1,18 +1,20 @@
-"""
-ARCH-4: Use Case — InferIntent
-Orchestrates intent inference over a closed session.
-Depends on ports (Interfaces) and domain services, not on SQLite.
-"""
+"""Clean Architecture use case for session intent inference."""
 
 import logging
 from typing import Any
 
-from backend.domain.ports.repositories import IEventRepository, ISessionRepository, IIntentRepository
+from backend.domain.ports.repositories import (
+    IEventRepository,
+    ISessionRepository,
+    IIntentRepository,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class InferIntentUseCase:
+    """Clean Architecture use case orchestrating session classification via injected components."""
+
     def __init__(
         self,
         session_repo: ISessionRepository,
@@ -22,6 +24,7 @@ class InferIntentUseCase:
         prompt_builder: Any,
         intent_parser: Any,
     ):
+        """Initialize with injected repository and pipeline components."""
         self.session_repo = session_repo
         self.event_repo = event_repo
         self.intent_repo = intent_repo
@@ -30,9 +33,13 @@ class InferIntentUseCase:
         self.intent_parser = intent_parser
 
     def execute_for_session(self, session_id: str) -> Any | None:
-        """
-        Runs inference for a specific session.
-        Returns the created IntentRecord, or None if skipped.
+        """Run classification workflow on the session matching session_id.
+
+        Args:
+            session_id: Identifier of the session to classify.
+
+        Returns:
+            IntentRecord if classification succeeded, None otherwise.
         """
         session = self.session_repo.find_by_id(session_id)
         if not session:
@@ -77,7 +84,11 @@ class InferIntentUseCase:
         return intent
 
     def execute_for_all_closed(self) -> int:
-        """Processes all closed sessions without intent. Returns how many were processed."""
+        """Batch execute session classification workflow on all closed status sessions.
+
+        Returns:
+            Number of sessions successfully processed.
+        """
         closed = self.session_repo.find_all(status="closed")
         processed = 0
         for session in closed:

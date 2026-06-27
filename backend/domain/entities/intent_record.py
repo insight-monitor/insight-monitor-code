@@ -1,17 +1,21 @@
+"""Intent record domain entity representing inferred session analysis."""
+
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
+
 SessionType = Literal[
-    "skill_development",
-    "applied_learning",
-    "peer_collaboration",
-    "ambiguous",
-    "personal"
+    "skill_development",   # Learning a new skill or theoretical concept
+    "applied_learning",    # Practical implementation of code or design
+    "peer_collaboration",  # Active collaboration with team members or meetings
+    "ambiguous",           # Unclear activity or insufficient evidence
+    "personal"             # Personal use or entertainment activity
 ]
 
 
 class IntentRecord(BaseModel):
+    """Analytical record representing the inferred intent of a session."""
     model_config = ConfigDict(from_attributes=True)
 
     record_id: str

@@ -1,8 +1,11 @@
+"""Session context domain entity for inference pipeline input."""
+
 from pydantic import BaseModel
 from datetime import datetime
 
 
 class SessionContext(BaseModel):
+    """Consolidated session metadata used as LLM input."""
     session_id: str
     start_time: datetime
     end_time: datetime | None = None
@@ -13,7 +16,7 @@ class SessionContext(BaseModel):
     avg_clicks_per_min: float | None = None
     avg_keystrokes_per_min: float | None = None
     active_apps: list[str] = []
-    status: str = "open"
+    status: str = "open"  # "open" | "closed"
     session_type: str | None = None
     goal: str | None = None
     confidence: float | None = None
