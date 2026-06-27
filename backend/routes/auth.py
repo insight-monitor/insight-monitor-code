@@ -1,5 +1,4 @@
 import secrets
-from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
