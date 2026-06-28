@@ -31,7 +31,7 @@ class IntentParser:
             session_type=llm_response.get("session_type", "ambiguous"),
             goal=llm_response.get("goal", ""),
             goal_confidence=self._safe_float(
-                llm_response.get("goal_confidence"), 0.0
+                llm_response.get("goal_confidence"), 0.0  # type: ignore[arg-type]
             ),
             friction_points=llm_response.get("friction_points", []),
             friction_confidence=self._safe_float(
@@ -39,7 +39,7 @@ class IntentParser:
             ),
             category=llm_response.get("category", "ambiguous"),
             category_confidence=self._safe_float(
-                llm_response.get("category_confidence"), 0.0
+                llm_response.get("category_confidence"), 0.0  # type: ignore[arg-type]
             ),
             tags=llm_response.get("tags", []),
             evidence=llm_response.get("evidence", []),
