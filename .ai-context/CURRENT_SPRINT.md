@@ -33,7 +33,7 @@ Deliver working Inference Pipeline v0.1 with Clean Architecture foundation:
 
 **Day 8 Definition of Done**:
 - [ ] 6 use cases implemented (IngestEvent, BuildSessions, InferIntent, CloseSession, GetSession, ListSessions)
-- [ ] SQLite + InMemory repos implement ports
+- [ ] SQLite + InMemory repositories implement ports
 - [ ] `container.py` wires all dependencies
 - [ ] FastAPI routes use `Depends` for use cases
 - [ ] TypeScript types generated and committed

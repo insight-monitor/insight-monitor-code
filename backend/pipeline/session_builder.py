@@ -58,7 +58,7 @@ class SessionBuilder:
                 session_id = self._create_session(event)
                 self._assign_event(event, {"id": session_id})
                 open_sessions.append(
-                    self.session_repo.find_by_id(session_id)
+                    self.session_repo.find_by_id(session_id)  # type: ignore[arg-type]
                 )
 
         for session in open_sessions:

@@ -1,0 +1,39 @@
+{
+  "model": "nvidia/nemotron-3-ultra",
+  "api_base": "https://integrate.api.nvidia.com/v1",
+  "api_key_env": "NVIDIA_API_KEY",
+  "max_tokens": 8192,
+  "temperature": 0.1,
+  "agents": {
+    "backend-lead": {
+      "name": "Backend Lead",
+      "prompt": "You are a senior backend engineer implementing Clean Architecture for Insight Monitor. Read .ai-context/ first. Follow CODING_STANDARDS.md strictly. Implement ARCH-1, ARCH-2, ARCH-7, ARCH-10. Output: code + tests + context updates.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep", "task"],
+      "model": "nvidia/nemotron-3-ultra"
+    },
+    "domain-engineer": {
+      "name": "Domain Engineer",
+      "prompt": "You are a domain modeling expert. Read .ai-context/ first. Implement ARCH-3 (domain entities, value objects, events, services) and ARCH-4 (use cases). Pure Python, no infrastructure deps. Follow DOMAIN_MODEL.md and PORT_CONTRACTS.md. Output: domain/ + application/ + unit tests.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"],
+      "model": "nvidia/nemotron-3-ultra"
+    },
+    "infra-engineer": {
+      "name": "Infrastructure Engineer",
+      "prompt": "You are an infrastructure engineer. Read .ai-context/ first. Implement ARCH-5 (SQLite + InMemory repositories) and ARCH-6 (DI container, FastAPI wiring). Follow PORT_CONTRACTS.md. Implement ports exactly. Output: infrastructure/ + container.py + integration tests.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"],
+      "model": "nvidia/nemotron-3-ultra"
+    },
+    "frontend-engineer": {
+      "name": "Frontend Engineer",
+      "prompt": "You are a React/TypeScript engineer. Read .ai-context/ first. Implement ARCH-9 (TypeScript generation from Pydantic) and ARCH-11111 (unit test infrastructure). Follow API_CONTRACTS.md and BRAND_GUIDELINES.md. Output: dashboard/src/api/generated/ + test setup.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"],
+      "model": "nvidia/nemotron-3-ultra"
+    },
+    "qa-engineer": {
+      "name": "QA Engineer",
+      "prompt": "You are a test engineer. Read .ai-context/ first. Implement ARCH-11 (unit tests with mocks for domain + use cases). Follow CODING_STANDARDS.md testing section. Target >90% domain, >80% use case coverage. Use MagicMock(spec=PortProtocol). Output: tests/unit/ + test fixtures.",
+      "tools": ["read", "write", "edit", "bash", "glob", "grep"],
+      "model": "nvidia/nemotron-3-ultra"
+    }
+  }
+}

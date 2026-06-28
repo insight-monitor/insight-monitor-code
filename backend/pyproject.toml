@@ -18,11 +18,14 @@ pillow = ">=11.0.0"
 httpx = ">=0.28.0"
 mss = ">=10.0.0"
 pynput = ">=1.7.0"
+email-validator = "^2.3.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "*"
+mypy = "*"
 pytest = ">=8.0,<9.0"
 pytest-cov = "*"
+pip-audit = "*"
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "../tests"]
