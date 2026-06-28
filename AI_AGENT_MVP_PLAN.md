@@ -238,7 +238,7 @@ PARALLEL (Any Day): #53 (monitoring docs), #54 (schema sync), #52 (legacy fronte
 | `.ai-context/CODING_STANDARDS.md` | Python/TS conventions, git, security | All |
 | `.ai-context/AGENT_INSTRUCTIONS.md` | Agent startup & workflow | All |
 | `.ai-context/AGENT_HANDOFF.md` | Agent-to-agent context transfer | All |
-| `COLABORATORS.md` | Pre-commit hooks, setup guide | All |
+| `CONTRIBUTING.md` | Contribution guide, pre-commit hooks, setup | All |
 
 ---
 

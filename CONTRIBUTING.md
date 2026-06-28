@@ -23,6 +23,35 @@ cd backend && poetry run pytest -m unit -q
 
 ---
 
+## Pre-commit Hooks
+
+This project uses [pre-commit](https://pre-commit.com/) to run automated checks (linting, type checking, secrets scanning) before every commit and push. The configuration is in `.pre-commit-config.yaml`.
+
+### Setup
+
+```bash
+pip install pre-commit
+pre-commit install          # Runs checks on git commit
+pre-commit install --hook-type pre-push  # Also runs on git push
+```
+
+### What Runs
+
+| Hook | Stage | Purpose |
+|------|-------|---------|
+| `ruff` | commit | Lint and auto-format Python |
+| `mypy --strict` | commit | Type check Python with strict mode |
+| `gitleaks` | commit | Scan for secrets and API keys |
+| `pre-commit-hooks` | commit | Trailing whitespace, YAML/JSON/TOML validation, merge conflict detection |
+| `pytest-unit` | push | Run fast unit tests before pushing |
+
+### Tutorials
+
+- [Pre-commit Official Docs](https://pre-commit.com/#intro)
+- [Pre-commit: A Quick Guide](https://www.youtube.com/results?search_query=pre-commit+tutorial)
+
+---
+
 ## Architecture Overview
 
 Insight Monitor follows **Clean Architecture** with strict dependency inversion:
