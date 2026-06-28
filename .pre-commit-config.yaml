@@ -11,7 +11,7 @@ repos:
     hooks:
       - id: mypy
         args: [--strict, --show-error-codes]
-        additional_dependencies: [pydantic, fastapi, sqlalchemy]
+        additional_dependencies: [pydantic, fastapi, openai, google-genai, httpx, pillow]
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.0

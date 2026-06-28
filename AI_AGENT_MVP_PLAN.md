@@ -1,403 +1,266 @@
-# AI Agent Inference Pipeline v0.1 Execution Plan
+# AI Agent MVP Execution Plan — Days 9-14
+
+**Status**: ARCH-1 through ARCH-11 are **CLOSED**. ARCH-0 (#41) remains open — legacy `pipeline/` folder is still active alongside the new Clean Architecture use cases.
 
 **Branch**: `chore/ai-agent-mvp-plan`
-**Target**: Inference Pipeline v0.1 in 3 Days (Days 7-9 of 14)
-**Team**: 4 Persons × 4 Parallel Agents = 16 Agent Slots
-**Context**: `.ai-context/` (source of truth for all agents)
+**Target**: Complete the MVP (Days 9-14 of 14-day plan)
+**Key Shifts**:
+- ARCH issues (1-11) ✅ Solved — focus is now on **finishing the migration** and **real-time tracking**
+- LLM Provider: **OpenAI** (default — Gemini dropped due to free API reliability issues)
+- Real-time tracking: Currently **mock/simulated** — needs **Wayland support** and **agent heartbeat** (#55)
 
 ---
 
-## 1. Team Structure & Agent Assignment
+## 1. What's Done (ARCH-1 through ARCH-11)
 
-| Person | Role | Agents | Primary Issues | Backup Issues |
-|--------|------|--------|----------------|---------------|
-| **Person A** | Backend Lead + Orchestrator | Agent 1, 2 | ARCH-1, ARCH-2, ARCH-7, ARCH-10 | ARCH-6 |
-| **Person B** | Domain/Application Lead | Agent 1, 2 | ARCH-3, ARCH-4 | ARCH-5 |
-| **Person C** | Infrastructure Lead | Agent 1, 2 | ARCH-5, ARCH-6 | ARCH-2 |
-| **Person D** | Frontend/QA Lead | Agent 1, 2 | ARCH-9, ARCH-11 | ARCH-10 |
+All architecture restructuring issues from the original plan are closed:
 
-**Each person orchestrates 2 agents simultaneously** (4 OpenCode sessions per person).
-Total: 8 parallel agents working on critical path.
+| Issue | Status | Description |
+|-------|--------|-------------|
+| ARCH-1 (#30) | ✅ Closed | Database singleton removed — DB injected explicitly |
+| ARCH-2 (#31) | ✅ Closed | Repository port interfaces in `application/ports/repositories.py` |
+| ARCH-3 (#32) | ✅ Closed | Domain layer (`domain/entities/`, `domain/value_objects/`, `domain/events/`, `domain/services/`) |
+| ARCH-4 (#33) | ✅ Closed | Application layer with use cases (IngestEvent, BuildSessions, InferIntent, CloseSession, GetSession, ListSessions) |
+| ARCH-5 (#34) | ✅ Closed | SQLite + InMemory repository implementations |
+| ARCH-6 (#35) | ✅ Closed | DI Composition Root in `infrastructure/di.py` |
+| ARCH-7 (#36) | ✅ Closed | Unit of Work transaction boundaries |
+| ARCH-8 (#37) | ✅ Closed | Capture agent resilience (buffer, retry with backoff, graceful shutdown) |
+| ARCH-9 (#38) | ✅ Closed | TypeScript types auto-generated from Pydantic via `scripts/generate_types.py` |
+| ARCH-10 (#39) | ✅ Closed | Architecture docs updated (`current-state.md`, ADRs) |
+| ARCH-11 (#40) | ✅ Closed | Unit tests with InMemory repos; `pytest -m unit` < 2s |
+
+### What Still Remains
+
+**ARCH-0 (#41) — Master Plan**: The legacy `backend/pipeline/` directory still exists and is still wired into `main.py` as background tasks (`SessionBuilder`, `InferencePipeline`). The migration is **partially complete** — use cases exist and are used by API routes, but background tasks bypass them.
+
+**Dual execution path currently**:
+1. **Legacy background tasks** (started in `main.py` lifespan): `SessionBuilder` + `InferencePipeline` poll SQLite directly every 30s/60s
+2. **Clean Architecture use cases** (via API routes): called through DI container
 
 ---
 
-## 2. Dependency Graph (Critical Path)
+## 2. Remaining Work (Days 9-14)
+
+### Day 9: ARCH-0 Completion — Remove Legacy Pipeline
+
+**Goal**: Eliminate the dual execution path. Background tasks should use the Clean Architecture use cases.
+
+| Task | Owner | Description | Issue |
+|------|-------|-------------|-------|
+| Absorb pipeline into use cases | Backend Lead | Move `session_builder.py` logic into `BuildSessionsUseCase` | #41 |
+| Absorb inference into use cases | Backend Lead | Move `inference_pipeline.py` logic into `InferIntentUseCase` | #41 |
+| Replace `main.py` background tasks | Backend Lead | Use APScheduler or FastAPI lifespan calling use cases via DI | #41 |
+| Remove `backend/pipeline/` directory | Backend Lead | Delete after all logic is absorbed | #41 |
+| Integration tests | QA Lead | Test background tasks now use use cases | #41 |
+
+**Definition of Done**:
+- [ ] `backend/pipeline/` directory deleted
+- [ ] `main.py` background tasks call use cases (not legacy pipeline classes)
+- [ ] All existing tests pass
+- [ ] E2E smoke test: Capture → API → Dashboard
+
+### Day 10: Real-Time Tracking — Wayland Support + Agent Health
+
+**Goal**: Replace mock/simulated data with real-time capture on modern Ubuntu (Wayland). Add agent heartbeat so the dashboard shows real agent status.
+
+| Task | Owner | Description | Issue |
+|------|-------|-------------|-------|
+| Wayland window tracker | Capture Agent Lead | GNOME Shell DBus fallback in `capture/window_tracker.py` | #55 |
+| Display server auto-detect | Capture Agent Lead | Instantiate correct tracker based on `$XDG_SESSION_TYPE` | #55 |
+| Agent heartbeat | Backend Lead | Periodic `agent_heartbeat` events every 30s + `GET /health` returns `agent_status` | #55 |
+| Dashboard agent status | Frontend Lead | Show "Capture Agent: Online v{version}" / "Offline" next to backend dot | #55 |
+| Fallback to `xdotool` on X11 | Capture Agent Lead | Keep existing X11WindowTracker as fallback | #55 |
+
+**Definition of Done**:
+- [ ] Capture agent captures window titles on Ubuntu 22.04/24.04 Wayland (GNOME)
+- [ ] Auto-detects display server and uses correct backend
+- [ ] Dashboard shows real agent status (Online / Offline), not just API status
+- [ ] X11 fallback still works
+
+### Day 11: Self-Hosted Deployment — Systemd Services
+
+**Goal**: Three systemd user services so the entire stack starts on boot without manual intervention.
+
+| Task | Owner | Description | Issue |
+|------|-------|-------------|-------|
+| Backend systemd service | Infrastructure Lead | `insight-backend.service` — runs uvicorn on :8002 after network | #55 |
+| Capture systemd service | Infrastructure Lead | `insight-capture.service` — runs agent, depends on backend | #55 |
+| Dashboard systemd service | Infrastructure Lead | `insight-dashboard.service` — runs Vite on :5173 | #55 |
+| Install script | Infrastructure Lead | `scripts/install-systemd-services.sh` — idempotent setup | #55 |
+| Docs | Documentation Lead | Update platform support, add auto-start section to README | #56 |
+
+**Definition of Done**:
+- [ ] All three services start on machine boot
+- [ ] Dependency chain: capture → backend → network, dashboard → backend
+- [ ] Services degrade gracefully (backend fail ≠ capture agent crash)
+- [ ] `scripts/install-systemd-services.sh` works idempotently
+
+### Day 12: Testing & Quality Assurance
+
+**Goal**: Comprehensive integration + E2E tests. Ensure real-time data flows end-to-end.
+
+| Task | Owner | Description | Issue |
+|------|-------|-------------|-------|
+| Integration tests for SQLite | QA Lead | Real DB tests for all repositories | #54 |
+| Integration tests for use cases | QA Lead | Use cases with real SQLite | #54 |
+| E2E test: Capture → API → Dashboard | QA Lead | Full pipeline test with real agent events | — |
+| Verify database-schema.md matches code | QA Lead | Sync schema docs with actual migrations | #54 |
+| Test OpenAI integration | QA Lead | LLM service with real OpenAI calls (sparingly) | — |
+
+**Definition of Done**:
+- [ ] `pytest -m integration` passes
+- [ ] E2E test: capture agent sends events → API stores → dashboard displays
+- [ ] `database-schema.md` matches actual SQLite schema
+
+### Day 13: Documentation & Polish
+
+**Goal**: All docs reflect reality. Known issues are documented.
+
+| Task | Owner | Description | Issue |
+|------|-------|-------------|-------|
+| Real-time monitoring visibility doc | Documentation Lead | What appears in Dashboard vs Terminal | #53 |
+| Platform compatibility docs | Documentation Lead | Wayland support, systemd deployment | #56 |
+| Legacy frontend clarification | Documentation Lead | `frontend/` vs `dashboard/` in all docs | #52 |
+| Readme and setup docs update | Documentation Lead | Project initialization, DB setup, run modes | #51 |
+| CI docs-consistency checks | CI Lead | Automated checks to prevent doc drift | #61 |
+
+**Definition of Done**:
+- [ ] #53, #56, #52, #51 closed
+- [ ] All docs match current implementation
+- [ ] CI checks for doc consistency
+
+### Day 14: Final Integration & MVP Demo
+
+**Goal**: Everything works end-to-end. Demo-ready.
+
+| Task | Owner | Description |
+|------|-------|-------------|
+| Final E2E smoke test | All | Capture agent → API → Session building → Intent inference → Dashboard |
+| Bug bash | All | Fix remaining issues |
+| MVP demo prep | All | Tag `mvp-complete`, prepare demo script |
+| Buffer | All | Absorb any delays from previous days |
+
+**Definition of Done**:
+- [ ] Capture agent works on Wayland and X11
+- [ ] Dashboard shows live agent status + sessions with intent
+- [ ] All three systemd services auto-start
+- [ ] `pytest` passes (unit + integration)
+- [ ] Tag `mvp-complete`
+
+---
+
+## 3. LLM Provider: OpenAI (Default)
+
+The project currently supports both `openai` and `gemini` providers, configured via `LLM_PROVIDER` in `.env`.
+
+**Current state**:
+- Default: `LLM_PROVIDER=openai`, `LLM_MODEL=gpt-4o-mini`
+- Gemini support still exists in `services/llm_service.py` but is **not recommended** — free API tier had reliability issues
+- `backend/.env.example` already defaults to OpenAI
+
+**No code changes needed** — the switch is already in place at the config level. Ensure `API_KEY` in `.env` is set to an OpenAI key.
+
+---
+
+## 4. Real-Time Tracking: Current State
+
+Currently the project uses **simulated/mock data** for development:
+- `npm run simulate` sends predefined events to the API
+- `npm run seed` creates sample sessions directly in SQLite
+- The capture agent works only on **X11** — fails silently on Wayland (default Ubuntu 22.04+)
+
+**To achieve real-time tracking**, the capture agent needs:
+1. Wayland support (GNOME Shell DBus API) — #55
+2. Agent heartbeat → dashboard shows real status — #55
+3. Systemd auto-start on boot — #55
+
+---
+
+## 5. Open Issues Summary
+
+| Issue | Title | Status | Priority |
+|-------|-------|--------|----------|
+| #41 | ARCH-0: Master Plan | OPEN | 🔴 Critical |
+| #55 | Wayland support + systemd services | OPEN | 🔴 Critical |
+| #53 | Real-time monitoring visibility docs | OPEN | 🟡 High |
+| #54 | database-schema.md sync | OPEN | 🟡 High |
+| #56 | Platform compatibility docs | OPEN | 🟡 High |
+| #52 | Legacy frontend clarification | OPEN | 🟡 High |
+| #51 | Readme/setup docs update | OPEN | 🟡 High |
+| #59 | Missing /api/tickets endpoints | OPEN | 🟡 High |
+| #61 | Docs-consistency CI checks | OPEN | 🟢 Medium |
+| #12-17 | Days 9-14 MVP Roadmap | OPEN | 🟢 Medium |
+
+---
+
+## 6. Dependency Graph (Days 9-14)
 
 ```
-DAY 7                          DAY 8                          DAY 9
-┌─────────────────────────────────────────────────────────────────────┐
-│ ARCH-1 (A1) ──→ ARCH-2 (A2) ──→ ARCH-3 (B1) ──→ ARCH-4 (B2)       │
-│   │              │              │              │                    │
-│   │              │              │              ├→ ARCH-5 (C1)       │
-│   │              │              │              ├→ ARCH-6 (C2)       │
-│   │              │              │              ├→ ARCH-9 (D1)       │
-│   │              │              │              │                    │
-│   │              │              │              └→ ARCH-7 (A1)       │
-│   │              │              │                 │                │
-│   │              │              │                 ├→ ARCH-11 (D2)   │
-│   │              │              │                 ├→ ARCH-10 (A2)   │
-│   │              │              │                 │                │
-│   └──────────────┴──────────────┴─────────────────┘                │
-│                    INTEGRATION & PIPELINE DEMO                      │
-└─────────────────────────────────────────────────────────────────────┘
+DAY 9                         DAY 10                        DAY 11                        DAY 12-14
+┌──────────────────────┐      ┌──────────────────────┐      ┌──────────────────────┐      ┌──────────────────────┐
+│ ARCH-0 completion    │      │ Wayland tracker (#55) │      │ Systemd services     │      │ Testing + Polish     │
+│ Remove pipeline/     │ ──→  │ Agent heartbeat (#55) │ ──→  │ (#55)                │ ──→  │ + MVP Demo           │
+│ Background tasks →   │      │ Dashboard agent       │      │ Install script       │      │                      │
+│ use cases            │      │ status (#55)          │      │ Docs (#56)           │      │ Tag mvp-complete     │
+└──────────────────────┘      └──────────────────────┘      └──────────────────────┘      └──────────────────────┘
 
-PARALLEL (Optional): ARCH-8 (Capture Resilience) - Post-v0.1 if time
+PARALLEL (Any Day): #53 (monitoring docs), #54 (schema sync), #52 (legacy frontend), #51 (setup docs), #61 (CI checks)
 ```
-
-**Key**: ARCH-X must complete before dependents start. Agents wait for PR merge.
 
 ---
 
-## 3. Daily Execution Plan
-
-### Day 7 (Foundation) - 2026-06-25
-
-| Time | Person A (2 Agents) | Person B (2 Agents) | Person C (2 Agents) | Person D (2 Agents) |
-|------|---------------------|---------------------|---------------------|---------------------|
-| 0-2h | A1: ARCH-1 impl<br>A2: ARCH-1 tests | B1: ARCH-3 entities<br>B2: ARCH-3 VOs | C1: Prep infra<br>C2: Prep DI | D1: Prep TS gen<br>D2: Prep test infra |
-| 2-4h | A1: ARCH-1 PR<br>A2: ARCH-2 ports | B1: ARCH-3 events<br>B2: ARCH-3 classifier | C1: SQLite repo stubs<br>C2: Container stub | D1: datamodel-codegen setup<br>D2: test/unit structure |
-| 4-6h | A1: Review A2 PR<br>A2: ARCH-2 PR | B1: ARCH-3 PR<br>B2: ARCH-3 tests | C1: InMemory repo stubs<br>C2: Container wiring | D1: Generation script<br>D2: Mock fixtures |
-| 6-8h | **Merge ARCH-1, ARCH-2**<br>Update context | **Merge ARCH-3**<br>Update context | **Ready for Day 8** | **Ready for Day 8** |
-
-**Day 7 Gates** (must pass before Day 8):
-- [ ] `Database` no singleton, DI works
-- [ ] `application/ports/repositories.py` exists
-- [ ] `domain/` complete with tests
-- [ ] All CI green on `develop`
-
-### Day 8 (Application + Integration) - 2026-06-26
-
-| Time | Person A | Person B | Person C | Person D |
-|------|----------|----------|----------|----------|
-| 0-2h | A1: ARCH-7 design<br>A2: ARCH-10 docs | B1: ARCH-4 use cases (Ingest, BuildSessions)<br>B2: ARCH-4 use cases (InferIntent, Close, Get, List) | C1: ARCH-5 SQLite impl<br>C2: ARCH-5 InMemory impl | D1: ARCH-9 generation<br>D2: ARCH-11 unit test patterns |
-| 2-4h | A1: ARCH-7 impl<br>A2: ADR templates | B1: ARCH-4 PR<br>B2: ARCH-4 tests | C1: ARCH-5 PR<br>C2: ARCH-6 container impl | D1: ARCH-9 PR<br>D2: ARCH-11 test files |
-| 4-6h | **Integration test**<br>Fix conflicts | **Merge ARCH-4** | **Merge ARCH-5, ARCH-6** | **Merge ARCH-9** |
-| 6-8h | **E2E Smoke Test**<br>Capture→API→Dashboard | Update context | Update context | Update context |
-
-**Day 8 Gates**:
-- [ ] 6 use cases work with mocked ports
-- [ ] SQLite + InMemory repos implement ports
-- [ ] `container.py` wires all deps
-- [ ] FastAPI routes use `Depends`
-- [ ] TypeScript types generated
-- [ ] E2E flow works
-
-### Day 9 (Hardening + MVP) - 2026-06-27
-
-| Time | All Persons (All Agents) |
-|------|--------------------------|
-| 0-2h | A1: ARCH-7 transactions<br>A2: ARCH-10 current-state.md<br>B1: Bug fixes<br>B2: Bug fixes<br>C1: Bug fixes<br>C2: Bug fixes<br>D1: ARCH-11 unit tests<br>D2: ARCH-11 coverage |
-| 2-4h | Final integration testing<br>All PRs merged |
-| 4-6h | **MVP Demo Prep**<br>Tag `mvp-architecture-complete` |
-| 6-8h | Buffer / Presentation |
-
-**Day 9 Gates**:
-- [ ] Transactions atomic in use cases
-- [ ] Docs reflect reality
-- [ ] Unit tests >90% domain, >80% use cases
-- [ ] E2E works: Capture → Dashboard shows intent
-- [ ] All CI green
-
----
-
-## 4. Human Orchestrator Responsibilities (Each Person)
-
-### Before Each Day
-- [ ] Review `CURRENT_SPRINT.md` for day's goals
-- [ ] Assign agents to issues via GitHub comments
-- [ ] Verify `.ai-context/` is current (pull `develop`)
-
-### During Day (Continuous)
-- [ ] Monitor agent PRs (GitHub notifications)
-- [ ] **Architectural Review** (5 min/PR):
-  - Layer boundaries respected?
-  - Ports used correctly?
-  - No singleton/globals?
-  - Security rules followed?
-- [ ] Merge approved PRs to `develop`
-- [ ] Update `.ai-context/` after merges (or delegate to agent)
-- [ ] Resolve merge conflicts (see Section 6)
-- [ ] Unblock agents (decisions, clarification)
-
-### End of Day
-- [ ] Update `CURRENT_SPRINT.md` status
-- [ ] Update `AGENT_HANDOFF.md` summary
-- [ ] Tag `develop` if day complete: `git tag day-7-complete`
-- [ ] Sync with other persons (15 min async via GitHub)
-
----
-
-## 5. AI Agent Responsibilities
-
-### Mandatory Startup (Each Session)
-```bash
-# 1. Read context
-cat .ai-context/ARCHITECTURE.md
-cat .ai-context/CODING_STANDARDS.md
-cat .ai-context/DOMAIN_MODEL.md
-cat .ai-context/PORT_CONTRACTS.md
-cat .ai-context/SECURITY_RULES.md
-
-# 2. Read assigned issue
-gh issue view <issue-number>
-
-# 3. Check sprint status
-cat .ai-context/CURRENT_SPRINT.md
-
-# 4. Run baseline tests
-cd backend && poetry run pytest -m unit -q
-```
-
-### Implementation Rules
-- **One issue = one branch = one PR**
-- **Follow `.ai-context/AGENT_INSTRUCTIONS.md` exactly**
-- **Update context files** when changing contracts (see `AGENT_HANDOFF.md`)
-- **Write tests FIRST** (TDD preferred)
-- **Run CI locally before push**: `mypy --strict && ruff check && pytest -m unit`
-
-### PR Requirements
-- Title: `ARCH-X: <imperative>`
-- Body: Checklist from issue acceptance criteria
-- Labels: `architecture`, `needs-review`
-- Links: `Closes #<issue>`
-
-### When Done
-- Update `AGENT_HANDOFF.md` with your section
-- Comment on issue: `Ready for review - PR #XXX`
-- Wait for human approval
-
----
-
-## 6. Merge Conflict Strategy
-
-### Prevention
-- **Small PRs** (<300 lines changed)
-- **Short-lived branches** (merge same day)
-- **Rebase daily**: `git fetch origin && git rebase origin/develop`
-- **Communicate** in `AGENT_HANDOFF.md` when touching shared files
-
-### Shared Files (High Conflict Risk)
-| File | Owner | Coordination |
-|------|-------|--------------|
-| `.ai-context/ARCHITECTURE.md` | Person A | Only A updates |
-| `.ai-context/PORT_CONTRACTS.md` | Person A/B | A owns, B proposes via PR |
-| `.ai-context/DOMAIN_MODEL.md` | Person B | Only B updates |
-| `.ai-context/API_CONTRACTS.md` | Person D | Only D updates (auto-gen) |
-| `backend/container.py` | Person C | Only C updates |
-| `backend/main.py` | Person C | Only C updates |
-
-### Conflict Resolution
-1. Agent detects conflict on rebase → **STOP**
-2. Update `AGENT_HANDOFF.md` with conflict details
-3. Tag human orchestrator: `@person-a conflict in ARCHITECTURE.md`
-4. Human resolves, pushes resolution
-5. Agent rebases and continues
-
-### Emergency: Force Push Protection
-- Branch protection: Require PR, require CI, require review
-- No force push to `develop` or `main`
-- If `develop` broken: Revert commit, fix in new branch
-
----
-
-## 7. Continuous Integration Pipeline
-
-### GitHub Actions (`.github/workflows/ai-agent-ci.yml`)
-```yaml
-# Runs on every PR to develop
-# Jobs: backend, frontend, security
-# Must pass before merge
-```
-
-### Local Pre-Push (Agent runs)
-```bash
-cd backend
-poetry run mypy --strict .
-poetry run ruff check .
-poetry run pytest -m unit --tb=short -q
-
-cd ../dashboard
-npm run typecheck
-npm run lint
-npm run build
-```
-
-### Quality Gates (Non-Negotiable)
-| Check | Threshold |
-|-------|-----------|
-| mypy --strict | 0 errors |
-| ruff check | 0 errors |
-| pytest -m unit | 100% pass, <30s |
-| pytest -m integration | 100% pass |
-| npm run typecheck | 0 errors |
-| npm run build | Success |
-| Secret scan (gitleaks) | 0 findings |
-
----
-
-## 8. Communication Protocol
-
-### GitHub Issues (Primary)
-- **Agent → Orchestrator**: Comment on issue with `@person-x`
-- **Orchestrator → Agent**: Assign issue, comment with direction
-- **Cross-team**: Comment on dependent issue
-
-### AGENT_HANDOFF.md (Async Context)
-- Updated by agents at key milestones
-- Read by downstream agents before starting
-- Single source of truth for decisions
-
-### Daily Sync (15 min async)
-- Each person posts status in `CURRENT_SPRINT.md` issue comments
-- Format: `Person X: Day N - Done: ARCH-1,2 | In Progress: ARCH-3 | Blocked: -`
-
----
-
-## 9. Tool Setup (Per Person)
-
-### Windows (PowerShell)
-```powershell
-# Install tools
-winget install Git.Git
-winget install Python.Python.3.11
-winget install OpenJS.NodeJS.LTS
-# Poetry
-(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
-# OpenCode
-# Follow https://opencode.ai/install
-```
-
-### Linux (Ubuntu/Debian)
-```bash
-sudo apt update && sudo apt install -y git python3.11 python3.11-venv nodejs npm
-curl -sSL https://install.python-poetry.org | python3 -
-# OpenCode per docs
-```
-
-### Environment Variables (All)
-```bash
-export NVIDIA_API_KEY="your-free-key"
-export INSIGHT_DB_PATH="./backend/data/insight_monitor.db"
-export GEMINI_API_KEY="your-key"  # For LLM tests
-```
-
-### OpenCode Multi-Session (Per Person - 4 terminals)
-```bash
-# Terminal 1: Orchestrator view
-opencode
-
-# Terminal 2-5: Agents (tmux/screen recommended)
-tmux new-session -d -s agent-1 'cd insight-monitor-code && opencode --session backend-1'
-tmux new-session -d -s agent-2 'cd insight-monitor-code && opencode --session backend-2'
-tmux new-session -d -s agent-3 'cd insight-monitor-code && opencode --session frontend-1'
-tmux new-session -d -s agent-4 'cd insight-monitor-code && opencode --session qa-1'
-
-# Attach to monitor
-tmux attach -t agent-1
-```
-
-### Warp.dev (Optional - Better Terminal)
-- Free for individuals
-- AI-powered command suggestions
-- Session sharing for pair debugging
-- Install: `curl -fsSL https://warp.dev/install.sh | sh`
-
----
-
-## 10. Risk Mitigation
+## 7. Risk Mitigation
 
 | Risk | Probability | Mitigation |
 |------|-------------|------------|
-| Agent writes bad code | High | Strict CI + 5-min human arch review |
-| Context drift | Medium | `.ai-context/` updated at each merge |
-| NVIDIA API limit | Low | Fallback: Ollama local (CodeLlama 7B) |
-| Integration fails Day 9 | Medium | Daily smoke tests from Day 7 |
-| TS/backend drift | Medium | ARCH-9 runs on every backend PR |
-| Time overrun | High | **Cut scope**: Defer ARCH-7,8,11 to post-v0.1 |
-| Merge conflicts | Medium | Small PRs, daily rebase, file ownership |
+| Wayland testing requires physical access | High | Test on CI with Xvfb + merge Wayland code with X11 fallback |
+| Pipeline removal breaks existing features | Medium | Keep pipeline/ until Day 9 tests pass; delete only after green CI |
+| OpenAI API cost for testing | Low | Use cached responses in unit tests; real calls only in integration |
+| Time overrun | Medium | **Cut scope**: Deploy with simulated data + X11 only; Wayland as post-MVP |
 
-### Pipeline v0.1 Minimum (If Desperate)
-- ARCH-1,2,3,4,6 ONLY
-- Capture agent works (no resilience)
-- Dashboard shows sessions + intent
-- Unit tests for domain + use cases
-- Docs updated
+### MVP Minimum (If Desperate)
+- ARCH-0 complete (pipeline removed)
+- OpenAI integration working
+- X11 capture agent + simulated data
+- Dashboard shows sessions with intent
+- Integration tests pass
 
 ---
 
-## 11. Immediate Action Items (Do Now)
+## 8. Context Files
 
-### Person A (Backend Lead)
-1. [ ] Create `.github/workflows/ai-agent-ci.yml` from template
-2. [ ] Set up branch protection on `develop`
-3. [ ] Assign ARCH-1, ARCH-2 to agents via GitHub comments
-4. [ ] Launch Agent 1, 2 sessions
-
-### Person B (Domain Lead)
-1. [ ] Review `DOMAIN_MODEL.md` for completeness
-2. [ ] Assign ARCH-3 to agents
-3. [ ] Launch Agent 1, 2 sessions
-
-### Person C (Infra Lead)
-1. [ ] Review `PORT_CONTRACTS.md` for completeness
-2. [ ] Prepare `container.py` skeleton
-3. [ ] Launch Agent 1, 2 sessions (wait for Day 8)
-
-### Person D (Frontend/QA Lead)
-1. [ ] Set up `datamodel-codegen` in dashboard
-2. [ ] Create `tests/unit/` structure
-3. [ ] Launch Agent 1, 2 sessions (wait for Day 8)
-
-### All Persons
-1. [ ] Clone repo, checkout `chore/ai-agent-mvp-plan`
-2. [ ] Install dependencies: `cd backend && poetry install && cd ../dashboard && npm ci`
-3. [ ] Verify CI runs: `gh workflow run ai-agent-ci.yml`
-4. [ ] Read `.ai-context/AGENT_INSTRUCTIONS.md`
+| File | Purpose | Owner |
+|------|---------|-------|
+| `.ai-context/ARCHITECTURE.md` | Target Clean Architecture layers | Backend Lead |
+| `.ai-context/CURRENT_SPRINT.md` | Daily goals and status | All (updated daily) |
+| `.ai-context/DOMAIN_MODEL.md` | Entities, VOs, events, services | Backend Lead |
+| `.ai-context/PORT_CONTRACTS.md` | Repository, LLM, EventBus interfaces | Backend Lead |
+| `.ai-context/CODING_STANDARDS.md` | Python/TS conventions, git, security | All |
+| `.ai-context/AGENT_INSTRUCTIONS.md` | Agent startup & workflow | All |
+| `.ai-context/AGENT_HANDOFF.md` | Agent-to-agent context transfer | All |
+| `COLABORATORS.md` | Pre-commit hooks, setup guide | All |
 
 ---
 
-## 12. Success Metrics
+## 9. Quick Reference
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Unit test speed | <30s | `pytest -m unit` |
-| Domain coverage | >90% | `pytest --cov=backend/domain` |
-| Use case coverage | >80% | `pytest --cov=backend/application` |
-| Type safety | 0 errors | `mypy --strict` |
-| Lint | 0 errors | `ruff check` / `npm run lint` |
-| Build | Success | `npm run build` |
-| E2E flow | Works | Manual: Capture→Dashboard |
-| Security | 0 findings | `gitleaks` + `trufflehog` |
-| Docs current | Yes | `CURRENT_SPRINT.md` + ADRs |
-
----
-
-## 13. Reference Links
-
-- **Master Issue**: #41 (ARCH-0)
-- **Architecture Issues**: #30-#40
-- **Context Dir**: `.ai-context/`
-- **Sprint Tracking**: `CURRENT_SPRINT.md`
-- **Handoff Log**: `AGENT_HANDOFF.md`
-
----
-
-## 14. Start Command
-
-When ready, each person runs:
 ```bash
-cd insight-monitor-code
-git checkout chore/ai-agent-mvp-plan
-git pull origin chore/ai-agent-mvp-plan
+# Set up
+cd backend
+poetry install
+cp .env.example .env  # Edit API_KEY to your OpenAI key
 
-# Launch agents (adjust for your 4 sessions)
-tmux new-session -d -s a1 'opencode --session agent-1'
-tmux new-session -d -s a2 'opencode --session agent-2'
-tmux new-session -d -s a3 'opencode --session agent-3'
-tmux new-session -d -s a4 'opencode --session agent-4'
+# Run
+npm run dev           # Full stack (backend :8002 + dashboard :5173)
+npm run capture       # Capture agent (separate terminal)
+npm run seed          # Load sample sessions
 
-# Give first prompt to each agent:
-# "Read .ai-context/AGENT_INSTRUCTIONS.md. Your issue is #XX. Begin."
+# Test
+cd backend
+poetry run pytest -m unit -q
+poetry run pytest -m integration -q
+
+# Quality
+poetry run mypy --strict .
+poetry run ruff check .
 ```
-
-**Good luck. Ship the Pipeline v0.1.**
