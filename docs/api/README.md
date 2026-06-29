@@ -5,16 +5,24 @@ Full interactive API documentation is available at `http://localhost:8002/docs` 
 ## Endpoints
 
 | Method | Path | Description | Status |
-|---|---|---|---|---|
-| `GET` | `/health` | Health check + agent status + version | ✅ |
+|---|---|---|---|
+| `GET` | `/health` | Health check + agent heartbeat status + version | ✅ |
+| `POST` | `/heartbeat` | Record agent heartbeat (from capture agent) | ✅ |
 | `POST` | `/events` | Ingest a single RawEvent | ✅ |
 | `POST` | `/events/batch` | Ingest multiple RawEvents | ✅ |
-| `GET` | `/events` | List recent events (`?limit=50`) | ✅ |
-| `GET` | `/events/session/{id}` | Events for a specific session | ✅ |
+| `GET` | `/events` | List recent events (`?limit=50&offset=0`) | ✅ |
+| `GET` | `/events/session/{id}` | Events for a session (`?limit=20&offset=0`) | ✅ |
 | `GET` | `/sessions` | List sessions (`?status=open&limit=50`) | ✅ |
-| `GET` | `/sessions/{id}` | Session detail with events + intent | ✅ |
+| `GET` | `/sessions/{id}` | Session detail + paginated events (`?limit=20&offset=0`) | ✅ |
 | `GET` | `/sessions/{id}/intent` | Session intent record only | ✅ |
 | `POST` | `/sessions/{id}/close` | Manually close a session | ✅ |
+| `GET` | `/tickets` | List tickets (`?status=open&limit=50&offset=0`) | ✅ |
+| `POST` | `/tickets` | Create a ticket | ✅ |
+| `GET` | `/tickets/stats` | Ticket statistics (total, open, in_progress, resolved, closed) | ✅ |
+| `GET` | `/tickets/{id}` | Ticket detail with comments | ✅ |
+| `PUT` | `/tickets/{id}` | Update ticket (title, description, status, priority) | ✅ |
+| `DELETE` | `/tickets/{id}` | Delete ticket and its comments | ✅ |
+| `POST` | `/tickets/{id}/comments` | Add comment to a ticket | ✅ |
 
 ## Data Models
 

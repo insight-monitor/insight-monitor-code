@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from backend.domain.entities.raw_event import RawEvent
 from backend.application.use_cases.ingest_event import IngestEventUseCase
 from backend.infrastructure.di import get_ingest_event_use_case, get_event_repository
@@ -27,17 +27,22 @@ async def create_events_batch(
 
 @router.get("")
 async def list_events(
-    limit: int = 50,
+    limit: int = Query(50, le=100),
+    offset: int = Query(0, ge=0),
     repo: IEventRepository = Depends(get_event_repository)
 ):
-    events = repo.find_recent(limit)
-    return {"events": events, "count": len(events)}
+    events = repo.find_recent(limit, offset)
+    total = repo.count_all()
+    return {"events": events, "count": total, "limit": limit, "offset": offset}
 
 
 @router.get("/session/{session_id}")
 async def get_session_events(
     session_id: str,
+    limit: int = Query(20, le=100),
+    offset: int = Query(0, ge=0),
     repo: IEventRepository = Depends(get_event_repository)
 ):
-    events = repo.find_by_session(session_id)
-    return {"session_id": session_id, "events": events, "count": len(events)}
+    events = repo.find_by_session_paginated(session_id, limit, offset)
+    total = repo.count_by_session(session_id)
+    return {"session_id": session_id, "events": events, "count": total, "limit": limit, "offset": offset}

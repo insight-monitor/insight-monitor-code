@@ -90,6 +90,37 @@ LLM inference output with confidence scoring.
 
 Indexes: `idx_intent_session(session_id)`
 
+### `tickets`
+
+Support tickets for issue tracking.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT | Primary key |
+| `title` | TEXT | Required |
+| `description` | TEXT | Default '' |
+| `status` | TEXT | open, in_progress, resolved, closed |
+| `priority` | TEXT | low, medium, high, critical |
+| `created_by` | TEXT | Default 'system' |
+| `created_at` | TEXT | Auto timestamp |
+| `updated_at` | TEXT | Auto timestamp |
+
+Indexes: `idx_tickets_status(status)`
+
+### `ticket_comments`
+
+Comments on support tickets.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT | Primary key |
+| `ticket_id` | TEXT | Foreign key → tickets(id) ON DELETE CASCADE |
+| `content` | TEXT | Required |
+| `author` | TEXT | Default 'system' |
+| `created_at` | TEXT | Auto timestamp |
+
+Indexes: `idx_comments_ticket(ticket_id)`
+
 ## Migrations
 
 The `_migrate()` method runs additive migrations on startup:

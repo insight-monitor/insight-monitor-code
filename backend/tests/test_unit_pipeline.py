@@ -2,9 +2,9 @@ import pytest
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
-from backend.pipeline.prompt_builder import PromptBuilder
-from backend.pipeline.intent_parser import IntentParser, IntentParserError
-from backend.pipeline.inference_pipeline import InferencePipeline
+from backend.services.prompt_builder import PromptBuilder
+from backend.services.intent_parser import IntentParser, IntentParserError
+from backend.application.use_cases.infer_intent import InferIntentUseCase
 from backend.services.llm_service import LLMService, LLMServiceError
 from backend.domain.entities.intent_record import IntentRecord
 
@@ -128,80 +128,152 @@ class TestLLMService:
             svc.generate_structured("test")
 
 
-class TestInferencePipeline:
-    def test_process_session_not_found_returns_none(self):
-        mock_db = MagicMock()
-        pipeline = InferencePipeline(mock_db, llm_service=MagicMock())
-        pipeline.session_repo.find_by_id = MagicMock(return_value=None)
-        assert pipeline.process_session("unknown") is None
-
-    def test_process_session_existing_intent_skips(self):
-        mock_db = MagicMock()
-        pipeline = InferencePipeline(mock_db, llm_service=MagicMock())
-        pipeline.session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
-        pipeline.intent_repo.find_by_session = MagicMock(return_value={"record_id": "existing"})
-        assert pipeline.process_session("sess-1") is None
-
-    def test_process_session_no_events_skips(self):
-        mock_db = MagicMock()
-        pipeline = InferencePipeline(mock_db, llm_service=MagicMock())
-        pipeline.session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
-        pipeline.intent_repo.find_by_session = MagicMock(return_value=None)
-        pipeline.event_repo.find_by_session = MagicMock(return_value=[])
-        assert pipeline.process_session("sess-1") is None
-
-    def test_process_session_llm_error_returns_none(self):
-        mock_db = MagicMock()
-        mock_llm = MagicMock(spec=LLMService)
-        mock_llm.generate_structured.side_effect = LLMServiceError("API error")
-        pipeline = InferencePipeline(mock_db, llm_service=mock_llm)
-        pipeline.session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
-        pipeline.intent_repo.find_by_session = MagicMock(return_value=None)
-        pipeline.event_repo.find_by_session = MagicMock(return_value=[{"event_id": "e1"}])
-        assert pipeline.process_session("sess-1") is None
-
-    def test_process_session_parser_error_returns_none(self):
-        mock_db = MagicMock()
-        mock_llm = MagicMock(spec=LLMService)
-        mock_llm.generate_structured.return_value = ('{"bad": "json"}', {"bad": "json"})
-        pipeline = InferencePipeline(mock_db, llm_service=mock_llm)
-        pipeline.session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
-        pipeline.intent_repo.find_by_session = MagicMock(return_value=None)
-        pipeline.event_repo.find_by_session = MagicMock(return_value=[{"event_id": "e1"}])
-        assert pipeline.process_session("sess-1") is None
-
-    def test_process_session_success(self):
-        mock_db = MagicMock()
-        mock_llm = MagicMock(spec=LLMService)
-        mock_llm.generate_structured.return_value = (
-            '{"session_type": "applied_learning", "goal": "Build feature", "goal_confidence": 0.85, "evidence": ["VS Code open"], "category": "applied_learning", "category_confidence": 0.8}',
-            {"session_type": "applied_learning", "goal": "Build feature", "goal_confidence": 0.85, "evidence": ["VS Code open"], "category": "applied_learning", "category_confidence": 0.8},
+class TestInferIntentUseCase:
+    def test_execute_for_session_not_found_returns_none(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_by_id = MagicMock(return_value=None)
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=MagicMock(),
+            intent_repo=MagicMock(),
+            llm_service=MagicMock(),
+            prompt_builder=MagicMock(),
+            intent_parser=MagicMock(),
         )
-        pipeline = InferencePipeline(mock_db, llm_service=mock_llm)
-        pipeline.session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
-        pipeline.intent_repo.find_by_session = MagicMock(return_value=None)
-        pipeline.event_repo.find_by_session = MagicMock(return_value=[{"event_id": "e1", "timestamp": "2026-01-01T00:00:00"}])
-        pipeline.intent_repo.create = MagicMock()
-        pipeline.session_repo.update = MagicMock()
+        assert use_case.execute_for_session("unknown") is None
 
-        result = pipeline.process_session("sess-1")
+    def test_execute_for_session_existing_intent_skips(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
+        mock_intent_repo = MagicMock()
+        mock_intent_repo.find_by_session = MagicMock(return_value={"record_id": "existing"})
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=MagicMock(),
+            intent_repo=mock_intent_repo,
+            llm_service=MagicMock(),
+            prompt_builder=MagicMock(),
+            intent_parser=MagicMock(),
+        )
+        assert use_case.execute_for_session("sess-1") is None
 
+    def test_execute_for_session_no_events_skips(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
+        mock_intent_repo = MagicMock()
+        mock_intent_repo.find_by_session = MagicMock(return_value=None)
+        mock_event_repo = MagicMock()
+        mock_event_repo.find_by_session = MagicMock(return_value=[])
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=mock_event_repo,
+            intent_repo=mock_intent_repo,
+            llm_service=MagicMock(),
+            prompt_builder=MagicMock(),
+            intent_parser=MagicMock(),
+        )
+        assert use_case.execute_for_session("sess-1") is None
+
+    def test_execute_for_session_llm_error_returns_none(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
+        mock_intent_repo = MagicMock()
+        mock_intent_repo.find_by_session = MagicMock(return_value=None)
+        mock_event_repo = MagicMock()
+        mock_event_repo.find_by_session = MagicMock(return_value=[{"event_id": "e1"}])
+        mock_llm = MagicMock()
+        mock_llm.generate_structured.side_effect = Exception("API error")
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=mock_event_repo,
+            intent_repo=mock_intent_repo,
+            llm_service=mock_llm,
+            prompt_builder=MagicMock(),
+            intent_parser=MagicMock(),
+        )
+        assert use_case.execute_for_session("sess-1") is None
+
+    def test_execute_for_session_parser_error_returns_none(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
+        mock_intent_repo = MagicMock()
+        mock_intent_repo.find_by_session = MagicMock(return_value=None)
+        mock_event_repo = MagicMock()
+        mock_event_repo.find_by_session = MagicMock(return_value=[{"event_id": "e1"}])
+        mock_llm = MagicMock()
+        mock_llm.generate_structured.return_value = ('{"bad": "json"}', {"bad": "json"})
+        mock_parser = MagicMock()
+        mock_parser.parse.side_effect = Exception("parse error")
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=mock_event_repo,
+            intent_repo=mock_intent_repo,
+            llm_service=mock_llm,
+            prompt_builder=MagicMock(),
+            intent_parser=mock_parser,
+        )
+        assert use_case.execute_for_session("sess-1") is None
+
+    def test_execute_for_session_success(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_by_id = MagicMock(return_value={"id": "sess-1", "status": "closed"})
+        mock_intent_repo = MagicMock()
+        mock_intent_repo.find_by_session = MagicMock(return_value=None)
+        mock_event_repo = MagicMock()
+        mock_event_repo.find_by_session = MagicMock(return_value=[{"event_id": "e1", "timestamp": "2026-01-01T00:00:00"}])
+
+        mock_intent = IntentRecord(
+            record_id="r1", session_id="sess-1",
+            timestamp=datetime.now(timezone.utc),
+            session_type="applied_learning", goal="Build feature",
+            goal_confidence=0.85, evidence=["VS Code open"],
+            category="applied_learning", category_confidence=0.8,
+        )
+
+        mock_llm = MagicMock()
+        mock_llm.generate_structured.return_value = ('{}', {})
+        mock_parser = MagicMock()
+        mock_parser.parse.return_value = mock_intent
+
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=mock_event_repo,
+            intent_repo=mock_intent_repo,
+            llm_service=mock_llm,
+            prompt_builder=MagicMock(),
+            intent_parser=mock_parser,
+        )
+
+        result = use_case.execute_for_session("sess-1")
         assert result is not None
         assert result.session_type == "applied_learning"
         assert result.goal == "Build feature"
-        assert result.goal_confidence == 0.85
-        pipeline.intent_repo.create.assert_called_once()
-        pipeline.session_repo.update.assert_called_once()
+        mock_intent_repo.create.assert_called_once()
 
-    def test_process_closed_sessions_counts_processed(self):
-        mock_db = MagicMock()
-        pipeline = InferencePipeline(mock_db, llm_service=MagicMock())
-        pipeline.session_repo.find_all = MagicMock(return_value=[{"id": "sess-1"}, {"id": "sess-2"}])
-        pipeline.process_session = MagicMock(side_effect=[IntentRecord(record_id="r1", session_id="sess-1", timestamp=datetime.now(timezone.utc), session_type="applied_learning", goal="test", goal_confidence=0.5, evidence=[], category="applied_learning", category_confidence=0.5), None])
-        assert pipeline.process_closed_sessions() == 1
+    def test_execute_for_all_closed_counts_processed(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_all = MagicMock(return_value=[{"id": "sess-1"}, {"id": "sess-2"}])
+        intent1 = IntentRecord(record_id="r1", session_id="sess-1", timestamp=datetime.now(timezone.utc), session_type="applied_learning", goal="test", goal_confidence=0.5, evidence=[], category="applied_learning", category_confidence=0.5)
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=MagicMock(),
+            intent_repo=MagicMock(),
+            llm_service=MagicMock(),
+            prompt_builder=MagicMock(),
+            intent_parser=MagicMock(),
+        )
+        use_case.execute_for_session = MagicMock(side_effect=[intent1, None])
+        assert use_case.execute_for_all_closed() == 1
 
-    def test_process_closed_sessions_zero_when_none(self):
-        mock_db = MagicMock()
-        pipeline = InferencePipeline(mock_db, llm_service=MagicMock())
-        pipeline.session_repo.find_all = MagicMock(return_value=[])
-        assert pipeline.process_closed_sessions() == 0
+    def test_execute_for_all_closed_zero_when_none(self):
+        mock_session_repo = MagicMock()
+        mock_session_repo.find_all = MagicMock(return_value=[])
+        use_case = InferIntentUseCase(
+            session_repo=mock_session_repo,
+            event_repo=MagicMock(),
+            intent_repo=MagicMock(),
+            llm_service=MagicMock(),
+            prompt_builder=MagicMock(),
+            intent_parser=MagicMock(),
+        )
+        assert use_case.execute_for_all_closed() == 0

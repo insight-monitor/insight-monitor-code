@@ -19,9 +19,11 @@ async def list_sessions(
 @router.get("/{session_id}")
 async def get_session(
     session_id: str,
+    limit: int = Query(20, le=100),
+    offset: int = Query(0, ge=0),
     use_case: GetSessionUseCase = Depends(get_get_session_use_case),
 ):
-    result = use_case.execute(session_id)
+    result = use_case.execute(session_id, limit=limit, offset=offset)
     if not result:
         raise HTTPException(status_code=404, detail="Session not found")
     return result

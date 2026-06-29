@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Insight Monitor Extension
+Comment=Enable GNOME Shell extension for window tracking
+Exec=gnome-extensions enable insight-monitor@insight-monitor
+X-GNOME-Autostart-enabled=true
+NoDisplay=true

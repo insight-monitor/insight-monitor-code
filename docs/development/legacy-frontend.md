@@ -42,4 +42,14 @@ frontend/
 
 ## Status
 
-Unmaintained. Not part of the MVP build pipeline (`npm run dev` does not include it). Do not use as reference for current frontend architecture.
+**Unmaintained. Not part of the MVP.** The current Insight Monitor frontend is in `dashboard/` (React + TypeScript + TailwindCSS). The `frontend/` directory is excluded from the build pipeline via `.gitignore` and `npm run dev` does not include it. Do not use as reference for current frontend architecture.
+
+## Current Frontend vs Legacy
+
+| | Current | Legacy |
+|---|---|---|
+| **Directory** | `dashboard/` | `frontend/` |
+| **Framework** | React 19 + TypeScript | Vanilla JavaScript |
+| **Styling** | TailwindCSS 4 | Bootstrap 5.3 |
+| **Status** | Active (MVP) | Unmaintained |
+| **Purpose** | Insight Monitor session dashboard | AI Support Desk (predecessor) |

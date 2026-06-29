@@ -1,8 +1,11 @@
+import json
 import logging
+import os
 import re
 import subprocess
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -11,6 +14,8 @@ BROWSER_PROCESSES = {
     "firefox", "firefox-esr", "chrome", "chromium", "chromium-browser",
     "brave", "opera", "edge", "vivaldi",
 }
+
+WAYLAND_WINDOW_JSON = "/tmp/insight-window.json"
 
 
 class WindowTracker:
@@ -136,3 +141,82 @@ class WindowTracker:
         if self._thread:
             self._thread.join(timeout=3)
         logger.info("Window tracker stopped")
+
+
+class WaylandWindowTracker:
+    def __init__(self):
+        self._active_window: dict[str, Any] = {}
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread: threading.Thread | None = None
+
+    def start(self):
+        self._running = True
+        self._thread = threading.Thread(target=self._poll, daemon=True)
+        self._thread.start()
+        logger.info("Wayland window tracker started (polling %s)", WAYLAND_WINDOW_JSON)
+
+    def _poll(self):
+        while self._running:
+            try:
+                data = self._read_window_json()
+                if data:
+                    with self._lock:
+                        self._active_window = data
+            except Exception as e:
+                logger.debug("Wayland window tracking error: %s", e)
+            time.sleep(1)
+
+    def _read_window_json(self) -> dict[str, Any] | None:
+        path = Path(WAYLAND_WINDOW_JSON)
+        if not path.exists():
+            return None
+
+        try:
+            content = path.read_text(encoding="utf-8")
+            raw = json.loads(content)
+            info: dict[str, Any] = {
+                "title": raw.get("title"),
+                "process": raw.get("wm_class"),
+                "pid": raw.get("pid"),
+            }
+
+            if info.get("process") and info["process"].lower() in BROWSER_PROCESSES:
+                tab_title = raw.get("title")
+                if tab_title:
+                    tracker = WindowTracker.__new__(WindowTracker)
+                    url = tracker.extract_url_from_title(tab_title)
+                    if url:
+                        info["url"] = url
+                    info["browser_tab_title"] = tab_title
+
+            return info
+        except (json.JSONDecodeError, OSError) as e:
+            logger.debug("Failed to read window JSON: %s", e)
+            return None
+
+    def get_active_window(self) -> dict[str, Any]:
+        with self._lock:
+            return dict(self._active_window)
+
+    def stop(self):
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=3)
+        logger.info("Wayland window tracker stopped")
+
+
+def detect_display_server() -> str:
+    session_type = os.environ.get("XDG_SESSION_TYPE", "").lower()
+    if session_type == "wayland":
+        return "wayland"
+    return "x11"
+
+
+def create_window_tracker():
+    display_server = detect_display_server()
+    if display_server == "wayland":
+        logger.info("Detected Wayland — using WaylandWindowTracker")
+        return WaylandWindowTracker()
+    logger.info("Detected X11 — using WindowTracker")
+    return WindowTracker()

@@ -56,6 +56,18 @@ class EventSender:
 
         return success
 
+    def send_heartbeat(self) -> bool:
+        try:
+            response = self.client.post(
+                f"{self.api_url}/heartbeat",
+                json={"source": "capture-agent"},
+            )
+            response.raise_for_status()
+            return True
+        except Exception as e:
+            logger.debug("Heartbeat send failed: %s", e)
+            return False
+
     def flush(self) -> int:
         """Forces a re-send of the full buffer. Returns how many events were sent."""
         return self._flush_buffer()

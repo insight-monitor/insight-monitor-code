@@ -1,0 +1,6 @@
+{
+  "name": "Insight Monitor Window Tracker",
+  "description": "Tracks focused window for Insight Monitor capture agent",
+  "uuid": "insight-monitor@insight-monitor",
+  "shell-version": ["45", "46", "47"]
+}

@@ -106,7 +106,7 @@ class PromptBuilder:
     """Builds structured prompts for session classification."""
 
     def __init__(self, user_context: dict | None = None):
-        self.user_context = user_context or {}  # Optional
+        self.user_context = user_context or {}
 
     def build(self, session: dict, events: list[dict]) -> str:
         """Construct the final prompt from system instruction, environmental data, and output schema."""

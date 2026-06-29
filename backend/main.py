@@ -10,30 +10,24 @@ from backend.config import settings
 from backend.routes.health import router as health_router
 from backend.routes.events import router as events_router
 from backend.routes.sessions import router as sessions_router
-from backend.pipeline.inference_pipeline import InferencePipeline
-from backend.pipeline.session_builder import SessionBuilder, POLL_INTERVAL
-from backend.infrastructure.db.sqlite.database import Database
+from backend.routes.tickets import router as tickets_router
+from backend.infrastructure.di import (
+    get_build_sessions_use_case,
+    get_infer_intent_use_case,
+)
 
 logger = logging.getLogger(__name__)
 
-INFERENCE_POLL_INTERVAL = 60
-
-session_builder: SessionBuilder | None = None
-inference_pipeline: InferencePipeline | None = None
+SESSION_BUILDER_POLL_SECONDS = 30
+INFERENCE_POLL_SECONDS = 60
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global session_builder, inference_pipeline
-    db = Database(settings.db_path)
-    session_builder = SessionBuilder(db)
-    session_builder.start()
+    from backend.infrastructure.di import get_db
 
-    if settings.api_key:
-        inference_pipeline = InferencePipeline(db)
-        logger.info("Inference pipeline initialized (provider=%s, model=%s)", settings.llm_provider, settings.llm_model)
-    else:
-        logger.warning("API_KEY not set — inference pipeline disabled")
+    db = get_db()
+    logger.info("Backend started (provider=%s, model=%s)", settings.llm_provider, settings.llm_model)
 
     sb_task = asyncio.create_task(_run_session_builder())
     ip_task = asyncio.create_task(_run_inference_pipeline())
@@ -42,28 +36,31 @@ async def lifespan(app: FastAPI):
 
     sb_task.cancel()
     ip_task.cancel()
-    if session_builder:
-        session_builder.stop()
 
 
 async def _run_session_builder():
     while True:
         try:
-            if session_builder:
-                session_builder.process_pending_events()
+            use_case = get_build_sessions_use_case()
+            touched = use_case.execute()
+            if touched:
+                logger.debug("Session builder processed %d events", touched)
         except Exception as e:
             logger.error("Session builder error: %s", e)
-        await asyncio.sleep(POLL_INTERVAL)
+        await asyncio.sleep(SESSION_BUILDER_POLL_SECONDS)
 
 
 async def _run_inference_pipeline():
     while True:
         try:
-            if inference_pipeline:
-                inference_pipeline.process_closed_sessions()
+            if settings.api_key:
+                use_case = get_infer_intent_use_case()
+                processed = use_case.execute_for_all_closed()
+                if processed:
+                    logger.debug("Inference processed %d closed sessions", processed)
         except Exception as e:
             logger.error("Inference pipeline error: %s", e)
-        await asyncio.sleep(INFERENCE_POLL_INTERVAL)
+        await asyncio.sleep(INFERENCE_POLL_SECONDS)
 
 
 app = FastAPI(
@@ -84,3 +81,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(events_router)
 app.include_router(sessions_router)
+app.include_router(tickets_router)

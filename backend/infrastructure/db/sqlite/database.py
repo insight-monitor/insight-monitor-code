@@ -94,6 +94,32 @@ class Database:
 
             CREATE INDEX IF NOT EXISTS idx_intent_session
                 ON intent_records(session_id);
+
+            CREATE TABLE IF NOT EXISTS tickets (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                status TEXT DEFAULT 'open',
+                priority TEXT DEFAULT 'medium',
+                created_by TEXT DEFAULT 'system',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tickets_status
+                ON tickets(status);
+
+            CREATE TABLE IF NOT EXISTS ticket_comments (
+                id TEXT PRIMARY KEY,
+                ticket_id TEXT NOT NULL,
+                content TEXT NOT NULL,
+                author TEXT DEFAULT 'system',
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_comments_ticket
+                ON ticket_comments(ticket_id);
         """)
         conn.commit()
         self._migrate()

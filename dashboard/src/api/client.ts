@@ -1,9 +1,15 @@
 const API_BASE = "/api"
 
+export interface AgentStatus {
+  status: string
+  version: string
+  last_seen: string | null
+}
+
 export interface Health {
   status: string
-  agent: string
-  version: string
+  agent: AgentStatus
+  api_version: string
 }
 
 export interface Session {
@@ -42,7 +48,16 @@ export interface RawEvent {
 
 export interface SessionDetail extends Session {
   events: RawEvent[]
+  event_count_total?: number
   intent?: IntentRecord
+}
+
+export interface PaginatedEvents {
+  session_id: string
+  events: RawEvent[]
+  count: number
+  limit: number
+  offset: number
 }
 
 export interface IntentRecord {
@@ -90,7 +105,25 @@ export async function getSessions(
 }
 
 export async function getSession(
-  id: string
+  id: string,
+  limit: number = 20,
+  offset: number = 0
 ): Promise<SessionDetail> {
-  return request<SessionDetail>(`/sessions/${id}`)
+  const params = new URLSearchParams()
+  params.set("limit", String(limit))
+  params.set("offset", String(offset))
+  return request<SessionDetail>(`/sessions/${id}?${params.toString()}`)
+}
+
+export async function getSessionEventsPaginated(
+  sessionId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<PaginatedEvents> {
+  const params = new URLSearchParams()
+  params.set("limit", String(limit))
+  params.set("offset", String(offset))
+  return request<PaginatedEvents>(
+    `/events/session/${sessionId}?${params.toString()}`
+  )
 }

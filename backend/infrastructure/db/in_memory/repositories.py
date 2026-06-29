@@ -30,9 +30,22 @@ class InMemoryEventRepository(IEventRepository):
             key=lambda e: e.get("timestamp", ""),
         )
 
-    def find_recent(self, limit: int = 50) -> List[dict]:
+    def find_by_session_paginated(self, session_id: str, limit: int = 20, offset: int = 0) -> List[dict]:
+        matches = sorted(
+            [copy.deepcopy(e) for e in self._store.values() if e.get("session_id") == session_id],
+            key=lambda e: e.get("timestamp", ""),
+        )
+        return matches[offset:offset + limit]
+
+    def count_by_session(self, session_id: str) -> int:
+        return sum(1 for e in self._store.values() if e.get("session_id") == session_id)
+
+    def find_recent(self, limit: int = 50, offset: int = 0) -> List[dict]:
         sorted_events = sorted(self._store.values(), key=lambda e: e.get("timestamp", ""), reverse=True)
-        return [copy.deepcopy(e) for e in sorted_events[:limit]]
+        return [copy.deepcopy(e) for e in sorted_events[offset:offset + limit]]
+
+    def count_all(self) -> int:
+        return len(self._store)
 
     def find_unassigned(self) -> List[dict]:
         return sorted(

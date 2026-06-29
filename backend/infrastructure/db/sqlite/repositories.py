@@ -65,11 +65,28 @@ class EventRepository(IEventRepository):
             (session_id,),
         )
 
-    def find_recent(self, limit: int = 50) -> list[dict]:
+    def find_by_session_paginated(self, session_id: str, limit: int = 20, offset: int = 0) -> list[dict]:
         return self.db.fetch_all(
-            "SELECT * FROM raw_events ORDER BY timestamp DESC LIMIT ?",
-            (limit,),
+            "SELECT * FROM raw_events WHERE session_id = ? ORDER BY timestamp LIMIT ? OFFSET ?",
+            (session_id, limit, offset),
         )
+
+    def count_by_session(self, session_id: str) -> int:
+        row = self.db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM raw_events WHERE session_id = ?",
+            (session_id,),
+        )
+        return row["cnt"] if row else 0
+
+    def find_recent(self, limit: int = 50, offset: int = 0) -> list[dict]:
+        return self.db.fetch_all(
+            "SELECT * FROM raw_events ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+
+    def count_all(self) -> int:
+        row = self.db.fetch_one("SELECT COUNT(*) as cnt FROM raw_events")
+        return row["cnt"] if row else 0
 
     def find_unassigned(self) -> list[dict]:
         return self.db.fetch_all(

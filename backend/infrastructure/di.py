@@ -66,8 +66,8 @@ def get_infer_intent_use_case() -> InferIntentUseCase:
     Only instantiated when the API key is available.
     """
     from backend.services.llm_service import LLMService
-    from backend.pipeline.prompt_builder import PromptBuilder
-    from backend.pipeline.intent_parser import IntentParser
+    from backend.services.prompt_builder import PromptBuilder
+    from backend.services.intent_parser import IntentParser
 
     return InferIntentUseCase(
         session_repo=get_session_repository(),

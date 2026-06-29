@@ -16,7 +16,19 @@ class IEventRepository(ABC):
         pass
 
     @abstractmethod
-    def find_recent(self, limit: int = 50) -> List[dict]:
+    def find_by_session_paginated(self, session_id: str, limit: int = 20, offset: int = 0) -> List[dict]:
+        pass
+
+    @abstractmethod
+    def count_by_session(self, session_id: str) -> int:
+        pass
+
+    @abstractmethod
+    def find_recent(self, limit: int = 50, offset: int = 0) -> List[dict]:
+        pass
+
+    @abstractmethod
+    def count_all(self) -> int:
         pass
 
     @abstractmethod
