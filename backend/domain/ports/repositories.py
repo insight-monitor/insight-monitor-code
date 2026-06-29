@@ -54,6 +54,10 @@ class ISessionRepository(ABC):
         pass
 
     @abstractmethod
+    def count_all(self, status: Optional[str] = None) -> int:
+        pass
+
+    @abstractmethod
     def find_by_id(self, session_id: str) -> Optional[dict]:
         pass
 

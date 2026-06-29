@@ -53,17 +53,6 @@ class BuildSessionsUseCase:
 
         return sessions_touched
 
-    def close_session(self, session_id: str) -> bool:
-        """Manually closes a session. Returns True if closed, False if not found."""
-        session = self.session_repo.find_by_id(session_id)
-        if not session:
-            return False
-        if session.get("status") == "closed":
-            return True
-        self.session_repo.update(session_id, {"status": "closed"})
-        logger.info("Session %s explicitly closed", session_id)
-        return True
-
     # ─────────────────────────── private helpers ───────────────────────────
 
     def _find_session_for_event(self, event: dict, open_sessions: list[dict]) -> dict | None:

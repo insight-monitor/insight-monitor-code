@@ -26,14 +26,22 @@ poetry run pytest -v
 
 ## Test Structure
 
-All tests live in `backend/tests/`:
+All tests live in `backend/tests/` (unit + integration) and `tests/` (E2E):
 
 | File | Tests | Marker | What it covers |
 |------|-------|--------|----------------|
-| `test_health.py` | 1 | integration | `GET /health` endpoint |
-| `test_unit_use_cases.py` | 10 | unit | IngestEvent, BuildSessions, GetSession use cases (InMemory repos) |
+| `test_health.py` | 14 | `unit` | Health endpoint + agent heartbeat functions |
+| `test_unit_pipeline.py` | 24 | `unit` | PromptBuilder, IntentParser, LLMService, InferIntentUseCase |
+| `test_unit_use_cases.py` | 10 | `unit` | IngestEvent, BuildSessions, GetSession use cases |
+| `test_unit_routes.py` | 12 | `unit` | Event, Session, Tickets route endpoints via TestClient |
+| `test_unit_tickets.py` | 20 | `unit` | ManageTicketsUseCase full CRUD + comments + stats |
+| `test_wayland_window_tracker.py` | 19 | `unit` | WaylandWindowTracker, display detection, factory |
+| `test_event_sender.py` | 9 | `unit` | EventSender.send_heartbeat + CaptureAgent heartbeat delegation |
+| `test_new_components.py` | 7 | `unit` + 1 `integration` | LLM services, inference pipeline with mock/real LLM |
+| `test_e2e.py` | 1 | `integration` | Full flow: events → session → inference → API |
+| `scripts/test_e2e_gemini.py` | — | manual | Real LLM E2E test (run manually) |
 
-**Total: 11 tests.** (Legacy tests `test_models.py`, `test_events.py`, `test_sessions.py`, `test_repositories.py` were replaced by `test_unit_use_cases.py` during the ARCH-0 Clean Architecture migration.)
+**Total: ~116 tests.**
 
 ## Naming Convention
 

@@ -88,6 +88,11 @@ class InMemorySessionRepository(ISessionRepository):
         session = self._store.get(session_id)
         return copy.deepcopy(session) if session else None
 
+    def count_all(self, status: Optional[str] = None) -> int:
+        if status:
+            return sum(1 for s in self._store.values() if s.get("status") == status)
+        return len(self._store)
+
 
 class InMemoryIntentRepository(IIntentRepository):
     def __init__(self):

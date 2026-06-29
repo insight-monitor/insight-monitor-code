@@ -46,6 +46,10 @@ class GetSessionUseCase:
         """Lists sessions, optionally filtered by status."""
         return self.session_repo.find_all(status=status, limit=limit)
 
+    def count_all(self, status: Optional[str] = None) -> int:
+        """Returns total count of sessions, optionally filtered by status."""
+        return self.session_repo.count_all(status=status)
+
     def close(self, session_id: str) -> bool:
         """Closes a session. Returns False if not found."""
         session = self.session_repo.find_by_id(session_id)

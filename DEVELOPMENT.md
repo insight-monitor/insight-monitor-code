@@ -94,9 +94,9 @@ insight-monitor-code/
 ├── backend/
 │   ├── application/          # Use cases, ports, DTOs
 │   ├── domain/               # Entities, VOs, events, services
-│   ├── infrastructure/       # SQLite, InMemory, DI, UnitOfWork
+│   ├── infrastructure/       # SQLite, InMemory, DI
 │   ├── routes/               # FastAPI routers (thin)
-│   ├── pipeline/             # Legacy pipeline modules
+│   ├── services/             # LLM service, prompts, intent parser
 │   ├── services/             # LLM service
 │   ├── config.py             # Settings
 │   ├── main.py               # FastAPI app entry
@@ -186,7 +186,7 @@ git rebase origin/develop
 | `.ai-context/ERROR_PHILOSOPHY.md` | Classification rules, confidence thresholds |
 | `.ai-context/API_CONTRACTS.md` | REST endpoints, TS types |
 | `backend/infrastructure/di.py` | Composition root (DI wiring) |
-| `backend/infrastructure/db/sqlite/unit_of_work.py` | Transaction boundaries |
+| `backend/infrastructure/db/sqlite/database.py` | SQLite database and schema |
 
 ---
 

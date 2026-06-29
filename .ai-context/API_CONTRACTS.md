@@ -46,7 +46,7 @@ POST /sessions/{session_id}/close
 Response: { "status": "closed"|"already_closed", "session_id": "uuid" }
 ```
 
-## TypeScript Types (Generated - dashboard/src/api/generated/)
+## TypeScript Types (Generated - dashboard/src/api/generated-types.ts)
 ```typescript
 // RawEvent
 interface RawEvent {
@@ -111,5 +111,5 @@ interface IntentRecord {
 ## Generation (ARCH-9)
 - Script: `scripts/generate_types.py`
 - Runs: `datamodel-codegen` on `backend/models/*.py`
-- Output: `dashboard/src/api/generated/`
+- Output: `dashboard/src/api/generated-types.ts`
 - CI: Fails if generated types differ from committed

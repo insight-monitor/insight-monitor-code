@@ -8,6 +8,7 @@ from backend.domain.ports.repositories import (
     ISessionRepository,
     IIntentRepository,
 )
+from backend.domain.ports.services import ILLMService, IPromptBuilder, IIntentParser
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,9 @@ class InferIntentUseCase:
         session_repo: ISessionRepository,
         event_repo: IEventRepository,
         intent_repo: IIntentRepository,
-        llm_service: Any,
-        prompt_builder: Any,
-        intent_parser: Any,
+        llm_service: ILLMService,
+        prompt_builder: IPromptBuilder,
+        intent_parser: IIntentParser,
     ):
         """Initialize with injected repository and pipeline components."""
         self.session_repo = session_repo

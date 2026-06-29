@@ -175,6 +175,15 @@ class SessionRepository(ISessionRepository):
             )
         return [_parse_json_fields(r, _SESSION_JSON_FIELDS) for r in rows]
 
+    def count_all(self, status: str | None = None) -> int:
+        if status:
+            row = self.db.fetch_one(
+                "SELECT COUNT(*) as cnt FROM sessions WHERE status = ?", (status,),
+            )
+        else:
+            row = self.db.fetch_one("SELECT COUNT(*) as cnt FROM sessions")
+        return row["cnt"] if row else 0
+
     def find_by_id(self, session_id: str) -> dict | None:
         row = self.db.fetch_one(
             "SELECT * FROM sessions WHERE id = ?", (session_id,),

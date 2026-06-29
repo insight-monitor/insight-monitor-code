@@ -54,7 +54,7 @@ backend/
 | **ARCH-4** | Done | Use cases in `application/use_cases/` with port-only dependencies |
 | **ARCH-5** | Done | SQLite + InMemory repository implementations |
 | **ARCH-6** | Done | DI Composition Root in `infrastructure/di.py` |
-| **ARCH-7** | Done | Unit of Work transaction boundaries in `infrastructure/db/sqlite/unit_of_work.py` |
+| **ARCH-7** | Done | Repository-level commits; future transactional boundaries via DB connection wrapper |
 | **ARCH-8** | Done | Capture agent resilience: buffer, retry with backoff, graceful shutdown |
 | **ARCH-9** | Done | TypeScript types auto-generated from Pydantic via `scripts/generate_types.py`; run `npm run generate:types` |
 | **ARCH-10** | Done | This document, ADRs, and related docs updated |
