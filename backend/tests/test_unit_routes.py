@@ -175,7 +175,7 @@ class TestSessionRoutes:
 
 class TestSessionPagination:
     def test_get_session_detail_paginated(self, client):
-        c, mem_event, mem_session, mem_intent = client
+        c, mem_event, mem_session, _mem_intent, _mem_ticket, _mem_comment = client
         session_id = "test-session-detail"
         mem_session.create({
             "id": session_id,
@@ -228,7 +228,7 @@ class TestSessionPagination:
         assert data["events"][0]["event_id"] == "detail-4"
 
     def test_get_session_detail_default_pagination(self, client):
-        c, mem_event, mem_session, mem_intent = client
+        c, mem_event, mem_session, _mem_intent, _mem_ticket, _mem_comment = client
         session_id = "test-session-detail-default"
         mem_session.create({
             "id": session_id,

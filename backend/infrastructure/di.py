@@ -12,12 +12,21 @@ from backend.infrastructure.db.sqlite.repositories import (
     EventRepository,
     SessionRepository,
     IntentRepository,
+    TicketRepository,
+    CommentRepository,
 )
-from backend.domain.ports.repositories import IEventRepository, ISessionRepository, IIntentRepository
+from backend.domain.ports.repositories import (
+    IEventRepository,
+    ISessionRepository,
+    IIntentRepository,
+    ITicketRepository,
+    ICommentRepository,
+)
 from backend.application.use_cases.ingest_event import IngestEventUseCase
 from backend.application.use_cases.build_sessions import BuildSessionsUseCase
 from backend.application.use_cases.infer_intent import InferIntentUseCase
 from backend.application.use_cases.get_session import GetSessionUseCase
+from backend.application.use_cases.manage_tickets import ManageTicketsUseCase
 
 
 # ── Database ──────────────────────────────────────────────────────────────────
@@ -40,6 +49,14 @@ def get_session_repository() -> ISessionRepository:
 
 def get_intent_repository() -> IIntentRepository:
     return IntentRepository(get_db())
+
+
+def get_ticket_repository() -> ITicketRepository:
+    return TicketRepository(get_db())
+
+
+def get_comment_repository() -> ICommentRepository:
+    return CommentRepository(get_db())
 
 
 # ── Use Cases (Application Layer) ────────────────────────────────────────────
@@ -76,4 +93,11 @@ def get_infer_intent_use_case() -> InferIntentUseCase:
         llm_service=LLMService(),
         prompt_builder=PromptBuilder(),
         intent_parser=IntentParser(),
+    )
+
+
+def get_manage_tickets_use_case() -> ManageTicketsUseCase:
+    return ManageTicketsUseCase(
+        ticket_repo=get_ticket_repository(),
+        comment_repo=get_comment_repository(),
     )

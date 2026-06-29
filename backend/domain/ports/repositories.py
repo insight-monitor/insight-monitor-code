@@ -70,3 +70,51 @@ class IIntentRepository(ABC):
     @abstractmethod
     def find_all(self, limit: int = 50) -> List[dict]:
         pass
+
+
+class ITicketRepository(ABC):
+    @abstractmethod
+    def create(self, ticket: dict[str, Any]) -> str:
+        pass
+
+    @abstractmethod
+    def find_all(self, status: Optional[str] = None, limit: int = 50, offset: int = 0) -> List[dict]:
+        pass
+
+    @abstractmethod
+    def count_all(self, status: Optional[str] = None) -> int:
+        pass
+
+    @abstractmethod
+    def find_by_id(self, ticket_id: str) -> Optional[dict]:
+        pass
+
+    @abstractmethod
+    def update(self, ticket_id: str, updates: dict[str, Any]) -> None:
+        pass
+
+    @abstractmethod
+    def delete(self, ticket_id: str) -> None:
+        pass
+
+    @abstractmethod
+    def stat_counts(self) -> dict[str, int]:
+        pass
+
+
+class ICommentRepository(ABC):
+    @abstractmethod
+    def create(self, comment: dict[str, Any]) -> str:
+        pass
+
+    @abstractmethod
+    def find_by_ticket(self, ticket_id: str) -> List[dict]:
+        pass
+
+    @abstractmethod
+    def find_by_id(self, comment_id: str) -> Optional[dict]:
+        pass
+
+    @abstractmethod
+    def delete_by_ticket(self, ticket_id: str) -> None:
+        pass

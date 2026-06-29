@@ -135,6 +135,30 @@ class Database:
                 "ALTER TABLE intent_records ADD COLUMN raw_timeline_summary TEXT DEFAULT ''",
                 "raw_timeline_summary",
             ),
+            (
+                """CREATE TABLE IF NOT EXISTS tickets (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    status TEXT DEFAULT 'open',
+                    priority TEXT DEFAULT 'medium',
+                    created_by TEXT DEFAULT 'system',
+                    created_at TEXT DEFAULT (datetime('now')),
+                    updated_at TEXT DEFAULT (datetime('now'))
+                )""",
+                "tickets",
+            ),
+            (
+                """CREATE TABLE IF NOT EXISTS ticket_comments (
+                    id TEXT PRIMARY KEY,
+                    ticket_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    author TEXT DEFAULT 'system',
+                    created_at TEXT DEFAULT (datetime('now')),
+                    FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+                )""",
+                "ticket_comments",
+            ),
         ]
         for sql, col_name in migrations:
             try:
