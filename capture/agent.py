@@ -3,7 +3,7 @@ import time
 import logging
 from pathlib import Path
 
-from capture.window_tracker import WindowTracker
+from capture.window_tracker import create_window_tracker
 from capture.screenshot_capture import ScreenshotCapture
 from capture.input_monitor import InputMonitor
 from capture.event_sender import EventSender
@@ -19,28 +19,30 @@ class CaptureAgent:
         screenshot_dir: str | None = None,
         interval: int | None = None,
     ):
-        self.api_url = api_url or os.getenv(
-            "API_URL", "http://localhost:8002"
-        )
-        screenshot_dir_path = screenshot_dir or os.getenv(
+        self.api_url = api_url if api_url is not None else os.getenv("API_URL", "http://localhost:8002")
+        screenshot_dir_path = screenshot_dir if screenshot_dir is not None else os.getenv(
             "SCREENSHOT_DIR", "./data/screenshots"
         )
         self.screenshot_dir = Path(screenshot_dir_path)
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
 
-        self.window_tracker = WindowTracker()
+        self.window_tracker = create_window_tracker()
         self.screenshot_capture = ScreenshotCapture(self.screenshot_dir)
         self.input_monitor = InputMonitor()
         self.event_sender = EventSender(self.api_url)
 
-        self.interval = interval or int(
-            os.getenv("CAPTURE_INTERVAL_SECONDS", "30")
-        )
+        self.interval = interval or int(os.getenv("CAPTURE_INTERVAL_SECONDS", "30"))
         self.running = False
+        self._last_heartbeat = 0.0
+
+    def _send_heartbeat(self):
+        self.event_sender.send_heartbeat()
 
     def start(self):
         self.running = True
-        logger.info("Capture agent started (api=%s, interval=%ds)", self.api_url, self.interval)
+        logger.info(
+            "Capture agent started (api=%s, interval=%ds)", self.api_url, self.interval
+        )
 
         self.window_tracker.start()
         self.input_monitor.start()
@@ -58,6 +60,10 @@ class CaptureAgent:
                     last_screenshot = now
 
                 self._send_input_event()
+
+                if now - self._last_heartbeat >= 30:
+                    self._send_heartbeat()
+                    self._last_heartbeat = now
 
                 time.sleep(5)
         except KeyboardInterrupt:

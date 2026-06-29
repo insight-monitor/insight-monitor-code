@@ -298,13 +298,15 @@ async def create_event(
 ### Transaction Boundaries
 Use `UnitOfWork` for atomic operations:
 ```python
-from backend.infrastructure.db.sqlite.unit_of_work import UnitOfWork
+from backend.infrastructure.db.sqlite.database import Database
 
-with UnitOfWork(db) as uow:
-    uow.events.insert(event)
-    uow.sessions.create(session)
-    uow.commit()  # explicit commit
-# Auto-rollback on exception
+db = Database(settings.db_path)
+# Each repository call commits individually
+# For transactional boundaries, use the database connection directly:
+# with db.connection() as conn:
+#     conn.execute("BEGIN")
+#     # ... multiple operations
+#     conn.commit()
 ```
 
 ---

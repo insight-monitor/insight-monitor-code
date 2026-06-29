@@ -137,17 +137,6 @@ class TestBuildSessionsUseCase:
         assert len(sessions) == 1
         assert sessions[0]["id"] == "session-abc"
 
-    def test_close_session_sets_status(self, event_repo, session_repo):
-        session_repo.create({
-            "id": "session-xyz", "start_time": datetime.now(timezone.utc).isoformat(),
-            "status": "open", "event_count": 0, "screenshot_count": 0,
-            "app_sequence": [], "active_apps": [],
-        })
-        use_case = BuildSessionsUseCase(event_repo, session_repo)
-        closed = use_case.close_session("session-xyz")
-        assert closed is True
-        assert session_repo.find_by_id("session-xyz")["status"] == "closed"
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tests: GetSessionUseCase
@@ -185,3 +174,14 @@ class TestGetSessionUseCase:
         open_sessions = use_case.list_all(status="open")
         assert len(open_sessions) == 1
         assert open_sessions[0]["id"] == "s-open"
+
+    def test_close_sets_status(self, event_repo, session_repo, intent_repo):
+        session_repo.create({
+            "id": "session-close-test", "start_time": datetime.now(timezone.utc).isoformat(),
+            "status": "open", "event_count": 0, "screenshot_count": 0,
+            "app_sequence": [], "active_apps": [],
+        })
+        use_case = GetSessionUseCase(session_repo, event_repo, intent_repo)
+        closed = use_case.close("session-close-test")
+        assert closed is True
+        assert session_repo.find_by_id("session-close-test")["status"] == "closed"

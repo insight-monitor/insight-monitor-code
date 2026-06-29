@@ -22,19 +22,22 @@ class GetSessionUseCase:
         self.event_repo = event_repo
         self.intent_repo = intent_repo
 
-    def execute(self, session_id: str) -> Optional[dict]:
+    def execute(self, session_id: str, limit: int = 20, offset: int = 0) -> Optional[dict]:
         """
         Returns the session enriched with events and intent, or None if not found.
+        Events are paginated via limit/offset.
         """
         session = self.session_repo.find_by_id(session_id)
         if not session:
             return None
 
-        events = self.event_repo.find_by_session(session_id)
+        events = self.event_repo.find_by_session_paginated(session_id, limit, offset)
+        total_events = self.event_repo.count_by_session(session_id)
         intent = self.intent_repo.find_by_session(session_id)
 
         result = dict(session)
         result["events"] = events
+        result["event_count_total"] = total_events
         if intent:
             result["intent"] = intent
         return result
@@ -42,6 +45,10 @@ class GetSessionUseCase:
     def list_all(self, status: Optional[str] = None, limit: int = 50) -> list[dict]:
         """Lists sessions, optionally filtered by status."""
         return self.session_repo.find_all(status=status, limit=limit)
+
+    def count_all(self, status: Optional[str] = None) -> int:
+        """Returns total count of sessions, optionally filtered by status."""
+        return self.session_repo.count_all(status=status)
 
     def close(self, session_id: str) -> bool:
         """Closes a session. Returns False if not found."""

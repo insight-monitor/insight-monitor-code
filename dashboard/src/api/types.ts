@@ -1,31 +1,17 @@
-// Frontend-specific types and re-exports from generated backend types
-// Backend models are auto-generated: run `npm run generate:types` in dashboard/
-// Source: backend/domain/entities/*.py
+import type { RawEvent, IntentRecord, Session } from "./client";
 
-export {
-  type RawEvent,
-  type SessionContext,
-  type IntentRecord,
-  type SessionType,
-  type EventType,
-} from "./generated-types";
+export type { RawEvent, IntentRecord, Session };
 
 export interface AppSummary {
   duration_min: number;
   focus_pct: number;
 }
 
-export interface SessionWithIntent extends SessionContext {
+export interface SessionWithIntent extends Session {
   intent?: IntentRecord;
 }
 
-export interface HealthResponse {
-  status: string;
-  agent: string;
-  version: string;
-}
-
 export interface SessionListResponse {
-  sessions: SessionContext[];
+  sessions: Session[];
   count: number;
 }

@@ -5,6 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from backend.domain.entities.intent_record import IntentRecord
+from backend.domain.ports.services import IIntentParser
 
 
 class IntentParserError(Exception):
@@ -12,7 +13,7 @@ class IntentParserError(Exception):
     pass
 
 
-class IntentParser:
+class IntentParser(IIntentParser):
     """Parser that validates and transforms LLM response to IntentRecord."""
 
     def parse(
@@ -31,16 +32,16 @@ class IntentParser:
             session_type=llm_response.get("session_type", "ambiguous"),
             goal=llm_response.get("goal", ""),
             goal_confidence=self._safe_float(
-                llm_response.get("goal_confidence"), 0.0  # type: ignore[arg-type]
-            ),
+                llm_response.get("goal_confidence")
+            ) or 0.0,
             friction_points=llm_response.get("friction_points", []),
             friction_confidence=self._safe_float(
                 llm_response.get("friction_confidence")
             ),
             category=llm_response.get("category", "ambiguous"),
             category_confidence=self._safe_float(
-                llm_response.get("category_confidence"), 0.0  # type: ignore[arg-type]
-            ),
+                llm_response.get("category_confidence")
+            ) or 0.0,
             tags=llm_response.get("tags", []),
             evidence=llm_response.get("evidence", []),
             alternatives=llm_response.get("alternatives", []),

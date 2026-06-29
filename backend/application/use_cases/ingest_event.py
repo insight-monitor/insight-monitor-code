@@ -16,3 +16,15 @@ class IngestEventUseCase:
         for event in events:
             self.execute(event)
         return len(events)
+
+    def list_recent(self, limit: int = 50, offset: int = 0) -> dict:
+        """Lists recent events with pagination."""
+        events = self.event_repo.find_recent(limit, offset)
+        total = self.event_repo.count_all()
+        return {"events": events, "count": total, "limit": limit, "offset": offset}
+
+    def list_by_session(self, session_id: str, limit: int = 20, offset: int = 0) -> dict:
+        """Lists events for a specific session with pagination."""
+        events = self.event_repo.find_by_session_paginated(session_id, limit, offset)
+        total = self.event_repo.count_by_session(session_id)
+        return {"session_id": session_id, "events": events, "count": total, "limit": limit, "offset": offset}

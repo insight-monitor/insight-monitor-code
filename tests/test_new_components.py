@@ -8,9 +8,9 @@ BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
 from backend.services.llm_service import LLMService, LLMServiceError
-from backend.pipeline.prompt_builder import PromptBuilder
-from backend.pipeline.intent_parser import IntentParser, IntentParserError
-from backend.pipeline.inference_pipeline import InferencePipeline
+from backend.services.prompt_builder import PromptBuilder
+from backend.services.intent_parser import IntentParser, IntentParserError
+from backend.application.use_cases.infer_intent import InferIntentUseCase
 from backend.infrastructure.db.sqlite.database import Database
 
 
@@ -116,14 +116,14 @@ def test_intent_parser_invalid_type():
 
 
 @pytest.mark.integration
-def test_inference_pipeline_process_session():
-    db = Database(":memory:")
+def test_infer_intent_use_case_process_session(tmp_path):
+    db_path = str(tmp_path / "test_infer.db")
+    db = Database(db_path)
 
-    session_repo = __import__(
-        "backend.infrastructure.db.sqlite.repositories", fromlist=["SessionRepository", "EventRepository"]
-    )
-    SessionRepo = session_repo.SessionRepository
-    EventRepo = session_repo.EventRepository
+    from backend.infrastructure.db.sqlite.repositories import SessionRepository, EventRepository, IntentRepository
+    SessionRepo = SessionRepository
+    EventRepo = EventRepository
+    IntentRepo = IntentRepository
 
     SessionRepo(db).create(
         {
@@ -184,15 +184,22 @@ def test_inference_pipeline_process_session():
         mock_response,
     )
 
-    pipeline = InferencePipeline(db, llm_service=mock_llm)
-    result = pipeline.process_session("sess-123")
+    pipeline = InferIntentUseCase(
+        session_repo=SessionRepo(db),
+        event_repo=EventRepo(db),
+        intent_repo=IntentRepo(db),
+        llm_service=mock_llm,
+        prompt_builder=PromptBuilder(),
+        intent_parser=IntentParser(),
+    )
+    result = pipeline.execute_for_session("sess-123")
 
     assert result is not None
     assert result.session_type == "applied_learning"
     assert result.goal == "Build API endpoint"
     assert result.goal_confidence == 0.85
 
-    stored = session_repo.IntentRepository(db).find_by_session("sess-123")
+    stored = IntentRepo(db).find_by_session("sess-123")
     assert stored is not None
     assert stored["session_type"] == "applied_learning"
     assert stored["goal"] == "Build API endpoint"
@@ -200,7 +207,7 @@ def test_inference_pipeline_process_session():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("Testing new backend components (Día 6)")
+    print("Testing new backend components")
     print("=" * 60)
 
     test_llm_parse_json_response()
@@ -221,9 +228,10 @@ if __name__ == "__main__":
     test_intent_parser_invalid_type()
     print("[OK] IntentParser.parse invalid session_type")
 
-    test_inference_pipeline_process_session()
-    print("[OK] InferencePipeline.process_session")
+    # Note: Integration test requires pytest tmp_path fixture
+    # test_infer_intent_use_case_process_session()
+    # print("[OK] InferIntentUseCase.execute_for_session")
 
     print("=" * 60)
-    print("All new component tests passed")
+    print("All unit tests passed")
     print("=" * 60)

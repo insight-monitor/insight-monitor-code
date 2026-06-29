@@ -25,7 +25,7 @@ class InputMonitor:
 
     def _monitor(self):
         try:
-            from pynput import mouse, keyboard
+            from pynput import mouse, keyboard  # type: ignore[import-untyped]
 
             def on_click(*_):
                 with self._lock:

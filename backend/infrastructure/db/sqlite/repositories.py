@@ -2,7 +2,13 @@ import json
 from typing import Any
 
 from backend.infrastructure.db.sqlite.database import Database
-from backend.domain.ports.repositories import IEventRepository, ISessionRepository, IIntentRepository
+from backend.domain.ports.repositories import (
+    IEventRepository,
+    ISessionRepository,
+    IIntentRepository,
+    ITicketRepository,
+    ICommentRepository,
+)
 
 
 def _parse_json_fields(row: dict[str, Any], fields: list[str]) -> dict[str, Any]:
@@ -65,11 +71,28 @@ class EventRepository(IEventRepository):
             (session_id,),
         )
 
-    def find_recent(self, limit: int = 50) -> list[dict]:
+    def find_by_session_paginated(self, session_id: str, limit: int = 20, offset: int = 0) -> list[dict]:
         return self.db.fetch_all(
-            "SELECT * FROM raw_events ORDER BY timestamp DESC LIMIT ?",
-            (limit,),
+            "SELECT * FROM raw_events WHERE session_id = ? ORDER BY timestamp LIMIT ? OFFSET ?",
+            (session_id, limit, offset),
         )
+
+    def count_by_session(self, session_id: str) -> int:
+        row = self.db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM raw_events WHERE session_id = ?",
+            (session_id,),
+        )
+        return row["cnt"] if row else 0
+
+    def find_recent(self, limit: int = 50, offset: int = 0) -> list[dict]:
+        return self.db.fetch_all(
+            "SELECT * FROM raw_events ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+
+    def count_all(self) -> int:
+        row = self.db.fetch_one("SELECT COUNT(*) as cnt FROM raw_events")
+        return row["cnt"] if row else 0
 
     def find_unassigned(self) -> list[dict]:
         return self.db.fetch_all(
@@ -152,6 +175,15 @@ class SessionRepository(ISessionRepository):
             )
         return [_parse_json_fields(r, _SESSION_JSON_FIELDS) for r in rows]
 
+    def count_all(self, status: str | None = None) -> int:
+        if status:
+            row = self.db.fetch_one(
+                "SELECT COUNT(*) as cnt FROM sessions WHERE status = ?", (status,),
+            )
+        else:
+            row = self.db.fetch_one("SELECT COUNT(*) as cnt FROM sessions")
+        return row["cnt"] if row else 0
+
     def find_by_id(self, session_id: str) -> dict | None:
         row = self.db.fetch_one(
             "SELECT * FROM sessions WHERE id = ?", (session_id,),
@@ -217,3 +249,133 @@ class IntentRepository(IIntentRepository):
             r["record_id"] = r.pop("id")
             result.append(r)
         return result
+
+
+class TicketRepository(ITicketRepository):
+    _ALLOWED_UPDATE_FIELDS = {"title", "description", "status", "priority"}
+
+    def __init__(self, db: Database):
+        self.db = db
+
+    def create(self, ticket: dict[str, Any]) -> str:
+        ticket_id = ticket["id"]
+        self.db.execute(
+            """INSERT INTO tickets
+               (id, title, description, status, priority, created_by, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                ticket_id,
+                ticket.get("title"),
+                ticket.get("description", ""),
+                ticket.get("status", "open"),
+                ticket.get("priority", "medium"),
+                ticket.get("created_by", "system"),
+                ticket.get("created_at"),
+                ticket.get("updated_at"),
+            ),
+        )
+        self.db.commit()
+        return ticket_id
+
+    def find_all(self, status: str | None = None, limit: int = 50, offset: int = 0) -> list[dict]:
+        if status:
+            return self.db.fetch_all(
+                "SELECT * FROM tickets WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (status, limit, offset),
+            )
+        return self.db.fetch_all(
+            "SELECT * FROM tickets ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+
+    def count_all(self, status: str | None = None) -> int:
+        if status:
+            row = self.db.fetch_one(
+                "SELECT COUNT(*) as cnt FROM tickets WHERE status = ?", (status,),
+            )
+        else:
+            row = self.db.fetch_one("SELECT COUNT(*) as cnt FROM tickets")
+        return row["cnt"] if row else 0
+
+    def find_by_id(self, ticket_id: str) -> dict | None:
+        return self.db.fetch_one(
+            "SELECT * FROM tickets WHERE id = ?", (ticket_id,),
+        )
+
+    def update(self, ticket_id: str, updates: dict[str, Any]) -> None:
+        fields = {k: v for k, v in updates.items() if k in self._ALLOWED_UPDATE_FIELDS}
+        if not fields:
+            return
+        set_clause = ", ".join(f"{k} = ?" for k in fields)
+        values = list(fields.values()) + [ticket_id]
+        self.db.execute(
+            f"UPDATE tickets SET {set_clause} WHERE id = ?",
+            tuple(values),
+        )
+        self.db.commit()
+
+    def delete(self, ticket_id: str) -> None:
+        self.db.execute(
+            "DELETE FROM ticket_comments WHERE ticket_id = ?", (ticket_id,),
+        )
+        self.db.execute("DELETE FROM tickets WHERE id = ?", (ticket_id,))
+        self.db.commit()
+
+    def stat_counts(self) -> dict[str, int]:
+        row = self.db.fetch_one("""
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open,
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+                SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved,
+                SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed
+            FROM tickets
+        """)
+        if not row:
+            return {"total": 0, "open": 0, "in_progress": 0, "resolved": 0, "closed": 0}
+        return {
+            "total": row["total"] or 0,
+            "open": row["open"] or 0,
+            "in_progress": row["in_progress"] or 0,
+            "resolved": row["resolved"] or 0,
+            "closed": row["closed"] or 0,
+        }
+
+
+class CommentRepository(ICommentRepository):
+    def __init__(self, db: Database):
+        self.db = db
+
+    def create(self, comment: dict[str, Any]) -> str:
+        comment_id = comment["id"]
+        self.db.execute(
+            """INSERT INTO ticket_comments
+               (id, ticket_id, content, author, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (
+                comment_id,
+                comment["ticket_id"],
+                comment.get("content"),
+                comment.get("author", "system"),
+                comment.get("created_at"),
+            ),
+        )
+        self.db.commit()
+        return comment_id
+
+    def find_by_ticket(self, ticket_id: str) -> list[dict]:
+        return self.db.fetch_all(
+            "SELECT * FROM ticket_comments WHERE ticket_id = ? ORDER BY created_at ASC",
+            (ticket_id,),
+        )
+
+    def find_by_id(self, comment_id: str) -> dict | None:
+        return self.db.fetch_one(
+            "SELECT * FROM ticket_comments WHERE id = ?", (comment_id,),
+        )
+
+    def delete_by_ticket(self, ticket_id: str) -> None:
+        self.db.execute(
+            "DELETE FROM ticket_comments WHERE ticket_id = ?", (ticket_id,),
+        )
+        self.db.commit()

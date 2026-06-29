@@ -13,15 +13,17 @@ async def list_sessions(
     use_case: GetSessionUseCase = Depends(get_get_session_use_case),
 ):
     sessions = use_case.list_all(status=status, limit=limit)
-    return {"sessions": sessions, "count": len(sessions)}
+    return {"sessions": sessions, "count": use_case.count_all(status=status)}
 
 
 @router.get("/{session_id}")
 async def get_session(
     session_id: str,
+    limit: int = Query(20, le=100),
+    offset: int = Query(0, ge=0),
     use_case: GetSessionUseCase = Depends(get_get_session_use_case),
 ):
-    result = use_case.execute(session_id)
+    result = use_case.execute(session_id, limit=limit, offset=offset)
     if not result:
         raise HTTPException(status_code=404, detail="Session not found")
     return result
@@ -36,7 +38,9 @@ async def get_session_intent(
     if not result:
         raise HTTPException(status_code=404, detail="Session not found")
     if "intent" not in result:
-        raise HTTPException(status_code=404, detail="No intent record found for this session")
+        raise HTTPException(
+            status_code=404, detail="No intent record found for this session"
+        )
     return result["intent"]
 
 

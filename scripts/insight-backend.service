@@ -1,0 +1,14 @@
+[Unit]
+Description=Insight Monitor Backend API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8002
+WorkingDirectory=%h/insight-monitor-code
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

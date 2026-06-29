@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 E2E test with real LLM API (OpenAI or Gemini).
-Runs the full pipeline: simulated events -> API -> Inference Pipeline -> LLM -> IntentRecord.
+Runs the full flow: simulated events -> API -> BuildSessions -> InferIntent -> IntentRecord.
+Uses Clean Architecture use cases (no legacy pipeline).
 """
 
 import os
@@ -20,8 +21,10 @@ import httpx
 from backend.config import settings
 from backend.infrastructure.db.sqlite.database import Database
 from backend.infrastructure.db.sqlite.repositories import EventRepository, SessionRepository, IntentRepository
-from backend.pipeline.inference_pipeline import InferencePipeline
-from backend.pipeline.prompt_builder import PromptBuilder
+from backend.application.use_cases.build_sessions import BuildSessionsUseCase
+from backend.application.use_cases.infer_intent import InferIntentUseCase
+from backend.services.prompt_builder import PromptBuilder
+from backend.services.intent_parser import IntentParser
 from backend.services.llm_service import LLMService
 from backend.domain.entities.intent_record import IntentRecord
 
@@ -118,8 +121,12 @@ def send_events(events: List[Dict[str, Any]]) -> str:
             time.sleep(0.05)
     
     # Run session builder to assign events and create session
-    from backend.pipeline.session_builder import run_session_builder_once
-    run_session_builder_once()
+    db = Database()
+    use_case = BuildSessionsUseCase(
+        event_repo=EventRepository(db),
+        session_repo=SessionRepository(db),
+    )
+    use_case.execute()
     
     # Find the most recently created session (any status)
     with httpx.Client(timeout=10) as client:
@@ -131,14 +138,22 @@ def send_events(events: List[Dict[str, Any]]) -> str:
     return None
 
 
+def _run_build_sessions():
+    db = Database()
+    use_case = BuildSessionsUseCase(
+        event_repo=EventRepository(db),
+        session_repo=SessionRepository(db),
+    )
+    use_case.execute()
+
+
 def wait_for_session_closed(session_id: str, timeout: int = 15) -> bool:
     """Poll until session is marked closed, running session builder periodically."""
     with httpx.Client(timeout=10) as client:
         for _ in range(timeout * 2):
             try:
                 # Run session builder to assign events and update sessions
-                from backend.pipeline.session_builder import run_session_builder_once
-                run_session_builder_once()
+                _run_build_sessions()
                 
                 resp = client.get(f"{API_URL}/sessions/{session_id}")
                 if resp.status_code == 200:
@@ -153,7 +168,7 @@ def wait_for_session_closed(session_id: str, timeout: int = 15) -> bool:
     try:
         client.post(f"{API_URL}/sessions/{session_id}/close", timeout=5)
         # Run builder one more time to finalize
-        run_session_builder_once()
+        _run_build_sessions()
     except Exception:
         pass
     
@@ -169,11 +184,18 @@ def wait_for_session_closed(session_id: str, timeout: int = 15) -> bool:
 
 
 def run_inference(session_id: str) -> IntentRecord | None:
-    """Run the inference pipeline on a session."""
+    """Run intent inference on a session using Clean Architecture use case."""
     print(f"  Running inference on session {session_id}...")
     db = Database()
-    pipeline = InferencePipeline(db)
-    intent = pipeline.process_session(session_id)
+    use_case = InferIntentUseCase(
+        session_repo=SessionRepository(db),
+        event_repo=EventRepository(db),
+        intent_repo=IntentRepository(db),
+        llm_service=LLMService(),
+        prompt_builder=PromptBuilder(),
+        intent_parser=IntentParser(),
+    )
+    intent = use_case.execute_for_session(session_id)
     return intent
 
 
