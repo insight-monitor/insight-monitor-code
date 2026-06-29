@@ -23,7 +23,7 @@ The `capture/event_sender.py` now includes:
 
 ## Current state
 
-All components implemented. The capture agent survives backend restarts without data loss. Pending real Linux testing and Wayland compatibility.
+All components implemented. The capture agent survives backend restarts without data loss. **Wayland support implemented** via GNOME Shell extension (GNOME 45+) with `WaylandWindowTracker` polling `/tmp/insight-window.json`. X11 (`xdotool`/`xprop`) and Wayland both supported with auto-detection via `XDG_SESSION_TYPE`.
 
 ## Development
 
