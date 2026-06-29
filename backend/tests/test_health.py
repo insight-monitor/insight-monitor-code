@@ -3,12 +3,12 @@ from unittest.mock import patch
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 import backend.routes.health as health_mod
 
 record_agent_heartbeat = health_mod.record_agent_heartbeat
 get_agent_status = health_mod.get_agent_status
+
+pytestmark = pytest.mark.unit
 
 
 @pytest.fixture(autouse=True)

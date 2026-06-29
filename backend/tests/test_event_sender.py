@@ -1,17 +1,16 @@
 """Tests for EventSender.send_heartbeat() and CaptureAgent heartbeat delegation."""
+import sys
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
 
-pytestmark = pytest.mark.unit
-
-import sys
-from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from capture.event_sender import EventSender
+
+pytestmark = pytest.mark.unit
 
 
 class TestEventSenderSendHeartbeat:
