@@ -84,6 +84,7 @@ jobs:
   security:
     name: Security Scans
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
