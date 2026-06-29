@@ -32,16 +32,16 @@ class IntentParser(IIntentParser):
             session_type=llm_response.get("session_type", "ambiguous"),
             goal=llm_response.get("goal", ""),
             goal_confidence=self._safe_float(
-                llm_response.get("goal_confidence"), 0.0
-            ),
+                llm_response.get("goal_confidence")
+            ) or 0.0,
             friction_points=llm_response.get("friction_points", []),
             friction_confidence=self._safe_float(
                 llm_response.get("friction_confidence")
             ),
             category=llm_response.get("category", "ambiguous"),
             category_confidence=self._safe_float(
-                llm_response.get("category_confidence"), 0.0
-            ),
+                llm_response.get("category_confidence")
+            ) or 0.0,
             tags=llm_response.get("tags", []),
             evidence=llm_response.get("evidence", []),
             alternatives=llm_response.get("alternatives", []),
@@ -94,7 +94,7 @@ class IntentParser(IIntentParser):
             )
 
     @staticmethod
-    def _safe_float(value: Any, default: float = 0.0) -> float:
+    def _safe_float(value: Any, default: float | None = None) -> float | None:
         if value is None:
             return default
         try:

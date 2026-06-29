@@ -1,5 +1,6 @@
-// Re-export types from client.ts (source of truth for backend-derived types)
-export type { RawEvent, IntentRecord, Session } from "./client";
+import type { RawEvent, IntentRecord, Session } from "./client";
+
+export type { RawEvent, IntentRecord, Session };
 
 export interface AppSummary {
   duration_min: number;

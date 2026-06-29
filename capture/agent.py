@@ -19,8 +19,8 @@ class CaptureAgent:
         screenshot_dir: str | None = None,
         interval: int | None = None,
     ):
-        self.api_url: str = api_url or os.getenv("API_URL", "http://localhost:8002")
-        screenshot_dir_path: str = screenshot_dir or os.getenv(
+        self.api_url = api_url if api_url is not None else os.getenv("API_URL", "http://localhost:8002")
+        screenshot_dir_path = screenshot_dir if screenshot_dir is not None else os.getenv(
             "SCREENSHOT_DIR", "./data/screenshots"
         )
         self.screenshot_dir = Path(screenshot_dir_path)
