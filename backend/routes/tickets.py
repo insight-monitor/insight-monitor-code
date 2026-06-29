@@ -7,9 +7,6 @@ from backend.domain.entities.ticket import (
     TicketCreate,
     TicketUpdate,
     CommentCreate,
-    TicketResponse,
-    CommentResponse,
-    TicketStats,
 )
 from backend.infrastructure.di import get_db
 from backend.infrastructure.db.sqlite.database import Database

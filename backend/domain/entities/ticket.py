@@ -1,7 +1,5 @@
-from datetime import datetime, timezone
-from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class TicketCreate(BaseModel):

@@ -26,7 +26,7 @@ INFERENCE_POLL_SECONDS = 60
 async def lifespan(app: FastAPI):
     from backend.infrastructure.di import get_db
 
-    db = get_db()
+    get_db()  # initialize DB schema
     logger.info("Backend started (provider=%s, model=%s)", settings.llm_provider, settings.llm_model)
 
     sb_task = asyncio.create_task(_run_session_builder())
