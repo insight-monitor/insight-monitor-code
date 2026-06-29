@@ -18,6 +18,18 @@ BROWSER_PROCESSES = {
 WAYLAND_WINDOW_JSON = "/tmp/insight-window.json"
 
 
+def extract_url_from_title(title: str) -> str | None:
+    url_patterns = [
+        r"https?://[^\s]+",
+        r"\b[\w.-]+\.(com|org|net|io|dev|app|edu|gov)\S*",
+    ]
+    for pattern in url_patterns:
+        match = re.search(pattern, title, re.IGNORECASE)
+        if match:
+            return match.group(0)
+    return None
+
+
 class WindowTracker:
     def __init__(self):
         self._active_window: dict[str, Any] = {}
@@ -121,17 +133,6 @@ class WindowTracker:
             pass
         return None
 
-    def extract_url_from_title(self, title: str) -> str | None:
-        url_patterns = [
-            r"https?://[^\s]+",
-            r"\b[\w.-]+\.(com|org|net|io|dev|app|edu|gov)\S*",
-        ]
-        for pattern in url_patterns:
-            match = re.search(pattern, title, re.IGNORECASE)
-            if match:
-                return match.group(0)
-        return None
-
     def get_active_window(self) -> dict[str, Any]:
         with self._lock:
             return dict(self._active_window)
@@ -184,8 +185,7 @@ class WaylandWindowTracker:
             if info.get("process") and info["process"].lower() in BROWSER_PROCESSES:
                 tab_title = raw.get("title")
                 if tab_title:
-                    tracker = WindowTracker.__new__(WindowTracker)
-                    url = tracker.extract_url_from_title(tab_title)
+                    url = extract_url_from_title(tab_title)
                     if url:
                         info["url"] = url
                     info["browser_tab_title"] = tab_title
