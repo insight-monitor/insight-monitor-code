@@ -19,17 +19,20 @@ def extract_routes(routes_dir: Path) -> list[dict]:
             continue
         with open(py_file, encoding="utf-8") as f:
             try:
-                tree = ast.parse(f.read())
+                content = f.read()
+                tree = ast.parse(content)
             except SyntaxError:
                 continue
+
+        # Extract router prefix
+        prefix = ""
+        pref_match = re.search(r'prefix\s*=\s*["\']([^"\']+)["\']', content)
+        if pref_match:
+            prefix = pref_match.group(1)
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and hasattr(node.func, "attr"):
                 if node.func.attr in ("get", "post", "put", "delete", "patch"):
-                    prefix = ""
-                    for deco in (getattr(node, "decorator_list", []) if hasattr(node, "decorator_list") else []):
-                        pass
-
                     method = node.func.attr.upper()
                     path = None
                     if node.args:
@@ -38,10 +41,8 @@ def extract_routes(routes_dir: Path) -> list[dict]:
                             path = first.value
 
                     if path is not None:
-                        routes.append({"method": method, "path": path})
-
-    for route_node in ast.walk(ast.parse(open(routes_dir / "__init__.py").read())):
-        pass
+                        full_path = prefix + path
+                        routes.append({"method": method, "path": full_path})
 
     return routes
 
@@ -59,12 +60,12 @@ def parse_api_docs(doc_path: Path) -> list[dict]:
         line = line.strip()
         if line.startswith("|") and "---" not in line:
             parts = [p.strip() for p in line.split("|") if p.strip()]
-            if not in_table and parts and parts[0].upper() in ("METHOD", "VERB"):
+            if not in_table and parts and parts[0].lower() in ("method", "verb"):
                 in_table = True
                 continue
             if in_table and len(parts) >= 2:
-                method = parts[0].upper()
-                path = parts[1]
+                method = parts[0].replace("`", "").upper()  # Remove backticks
+                path = parts[1].replace("`", "")  # Remove backticks
                 if method in ("GET", "POST", "PUT", "DELETE", "PATCH"):
                     routes.append({"method": method, "path": path})
 
@@ -90,30 +91,8 @@ def main():
 
     errors = []
 
-    # The `prefix` from the router declaration needs to be considered
-    # For simplicity, we extract the prefix from the route files
-    router_prefixes = {}
-    for py_file in routes_dir.glob("*.py"):
-        if py_file.name.startswith("_"):
-            continue
-        with open(py_file, encoding="utf-8") as f:
-            content = f.read()
-        pref_match = re.search(r'prefix\s*=\s*["\']([^"\']+)["\']', content)
-        if pref_match:
-            prefix = pref_match.group(1)
-            key = py_file.stem
-            router_prefixes[key] = prefix
-
-    full_code_keys = set()
-    for method, path in code_keys:
-        prefixed = path
-        pp = path.split("/")
-        if len(pp) >= 2:
-            prefix_seg = pp[0]
-        full_code_keys.add((method, path))
-
-    missing_in_docs = full_code_keys - doc_keys
-    missing_in_code = doc_keys - full_code_keys
+    missing_in_docs = code_keys - doc_keys
+    missing_in_code = doc_keys - code_keys
 
     for method, path in sorted(missing_in_docs):
         errors.append(f"Route {method} {path} exists in code but NOT in docs/api/README.md")
@@ -126,7 +105,7 @@ def main():
             print(f"  - {e}")
         sys.exit(1)
 
-    print(f"OK: docs/api/README.md documents all {len(full_code_keys)} API routes")
+    print(f"OK: docs/api/README.md documents all {len(code_keys)} API routes")
     sys.exit(0)
 
 

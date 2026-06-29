@@ -47,7 +47,8 @@ def parse_md_schema(path: Path) -> dict[str, list[dict]]:
     with open(path, encoding="utf-8") as f:
         content = f.read()
 
-    table_sections = re.split(r'(?:^|\n)##\s+Table:\s+(\w+)', content, flags=re.MULTILINE)
+    # Match ### `table_name` or ### table_name
+    table_sections = re.split(r'(?:^|\n)###\s+`(\w+)`', content, flags=re.MULTILINE)
     for i in range(1, len(table_sections), 2):
         table_name = table_sections[i].strip()
         section = table_sections[i + 1] if i + 1 < len(table_sections) else ""

@@ -73,7 +73,13 @@ def client():
     app.router.lifespan_context = noop_lifespan
 
     with TestClient(app) as c:
-        yield c
+        yield c, mem_event, mem_session, mem_intent
 
     app.dependency_overrides.clear()
     app.router.lifespan_context = original_lifespan
+
+
+@pytest.fixture()
+def test_repos(client):
+    """Returns the in-memory repos used by the client fixture."""
+    return client[1], client[2], client[3]

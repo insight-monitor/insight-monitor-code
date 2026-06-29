@@ -23,8 +23,10 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
     settings.db_path = db_path
 
     from backend.main import app
-    from backend.pipeline.inference_pipeline import InferencePipeline
+    from backend.application.use_cases.infer_intent import InferIntentUseCase
     from backend.services.llm_service import LLMService
+    from backend.services.prompt_builder import PromptBuilder
+    from backend.services.intent_parser import IntentParser
 
     db = Database(db_path)
     event_repo = EventRepository(db)
@@ -98,8 +100,15 @@ def test_e2e_session_flow(tmp_path, monkeypatch):
             },
         )
 
-        pipeline = InferencePipeline(db, llm_service=mock_llm)
-        intent = pipeline.process_session(session_id)
+        pipeline = InferIntentUseCase(
+            session_repo=session_repo,
+            event_repo=event_repo,
+            intent_repo=intent_repo,
+            llm_service=mock_llm,
+            prompt_builder=PromptBuilder(),
+            intent_parser=IntentParser(),
+        )
+        intent = pipeline.execute_for_session(session_id)
         assert intent is not None, "Inference should return an IntentRecord"
         assert intent.session_type in ("skill_development", "applied_learning", "peer_collaboration", "ambiguous", "personal")
         assert 0.0 <= intent.goal_confidence <= 1.0
