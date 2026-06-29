@@ -19,12 +19,6 @@ export interface SessionWithIntent extends SessionContext {
   intent?: IntentRecord;
 }
 
-export interface HealthResponse {
-  status: string;
-  agent: string;
-  version: string;
-}
-
 export interface SessionListResponse {
   sessions: SessionContext[];
   count: number;
