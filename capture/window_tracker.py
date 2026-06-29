@@ -11,8 +11,15 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 BROWSER_PROCESSES = {
-    "firefox", "firefox-esr", "chrome", "chromium", "chromium-browser",
-    "brave", "opera", "edge", "vivaldi",
+    "firefox",
+    "firefox-esr",
+    "chrome",
+    "chromium",
+    "chromium-browser",
+    "brave",
+    "opera",
+    "edge",
+    "vivaldi",
 }
 
 WAYLAND_WINDOW_JSON = "/tmp/insight-window.json"
@@ -58,7 +65,9 @@ class WindowTracker:
     def _get_active_window_info(self) -> dict[str, Any] | None:
         result = subprocess.run(
             ["xdotool", "getactivewindow"],
-            capture_output=True, text=True, timeout=2,
+            capture_output=True,
+            text=True,
+            timeout=2,
         )
         if result.returncode != 0 or not result.stdout.strip():
             return None
@@ -88,7 +97,9 @@ class WindowTracker:
         try:
             result = subprocess.run(
                 ["xprop", "-id", window_id, prop],
-                capture_output=True, text=True, timeout=2,
+                capture_output=True,
+                text=True,
+                timeout=2,
             )
             if result.returncode == 0 and "=" in result.stdout:
                 parts = result.stdout.strip().split("=", 1)
@@ -102,7 +113,9 @@ class WindowTracker:
         try:
             result = subprocess.run(
                 ["xprop", "-id", window_id, "_NET_WM_PID"],
-                capture_output=True, text=True, timeout=2,
+                capture_output=True,
+                text=True,
+                timeout=2,
             )
             if result.returncode == 0 and "=" in result.stdout:
                 pid_str = result.stdout.strip().split("=", 1)[1].strip()
@@ -115,7 +128,9 @@ class WindowTracker:
         try:
             result = subprocess.run(
                 ["ps", "-p", str(pid), "-o", "comm="],
-                capture_output=True, text=True, timeout=1,
+                capture_output=True,
+                text=True,
+                timeout=1,
             )
             return result.stdout.strip() or None
         except Exception:
@@ -125,7 +140,9 @@ class WindowTracker:
         try:
             name_result = subprocess.run(
                 ["xdotool", "getwindowname", window_id],
-                capture_output=True, text=True, timeout=2,
+                capture_output=True,
+                text=True,
+                timeout=2,
             )
             if name_result.returncode == 0 and name_result.stdout.strip():
                 return name_result.stdout.strip()
@@ -145,6 +162,12 @@ class WindowTracker:
 
 
 class WaylandWindowTracker:
+    """Tracks active window on Wayland via GNOME Shell extension.
+
+    Requires the Insight Monitor GNOME Shell extension to be installed.
+    See ``docs/capture-agent/wayland-setup.md`` for setup instructions.
+    """
+
     def __init__(self):
         self._active_window: dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -214,6 +237,14 @@ def detect_display_server() -> str:
 
 
 def create_window_tracker():
+    """Create the appropriate window tracker based on the display server.
+
+    Returns:
+        WaylandWindowTracker if running under Wayland,
+        WindowTracker otherwise (X11).
+
+    See ``docs/capture-agent/wayland-setup.md`` for Wayland setup.
+    """
     display_server = detect_display_server()
     if display_server == "wayland":
         logger.info("Detected Wayland — using WaylandWindowTracker")

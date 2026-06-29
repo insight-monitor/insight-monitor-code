@@ -38,7 +38,9 @@ async def get_session_intent(
     if not result:
         raise HTTPException(status_code=404, detail="Session not found")
     if "intent" not in result:
-        raise HTTPException(status_code=404, detail="No intent record found for this session")
+        raise HTTPException(
+            status_code=404, detail="No intent record found for this session"
+        )
     return result["intent"]
 
 

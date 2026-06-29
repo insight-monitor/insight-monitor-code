@@ -122,7 +122,9 @@ class EventSender:
                 if self._backend_available:
                     logger.warning(
                         "Backend unreachable (attempt %d/%d): %s",
-                        attempt, max_retries, e,
+                        attempt,
+                        max_retries,
+                        e,
                     )
                 if attempt < max_retries:
                     time.sleep(delay)
@@ -141,7 +143,8 @@ class EventSender:
         self._buffer.append(event)
         logger.debug(
             "Event %s buffered locally (%d pending)",
-            event.get("event_id"), len(self._buffer),
+            event.get("event_id"),
+            len(self._buffer),
         )
 
     def _flush_buffer(self) -> int:

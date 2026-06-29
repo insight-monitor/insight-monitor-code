@@ -19,9 +19,7 @@ class CaptureAgent:
         screenshot_dir: str | None = None,
         interval: int | None = None,
     ):
-        self.api_url = api_url or os.getenv(
-            "API_URL", "http://localhost:8002"
-        )
+        self.api_url = api_url or os.getenv("API_URL", "http://localhost:8002")
         screenshot_dir_path = screenshot_dir or os.getenv(
             "SCREENSHOT_DIR", "./data/screenshots"
         )
@@ -33,9 +31,7 @@ class CaptureAgent:
         self.input_monitor = InputMonitor()
         self.event_sender = EventSender(self.api_url)
 
-        self.interval = interval or int(
-            os.getenv("CAPTURE_INTERVAL_SECONDS", "30")
-        )
+        self.interval = interval or int(os.getenv("CAPTURE_INTERVAL_SECONDS", "30"))
         self.running = False
         self._last_heartbeat = 0.0
 
@@ -44,7 +40,9 @@ class CaptureAgent:
 
     def start(self):
         self.running = True
-        logger.info("Capture agent started (api=%s, interval=%ds)", self.api_url, self.interval)
+        logger.info(
+            "Capture agent started (api=%s, interval=%ds)", self.api_url, self.interval
+        )
 
         self.window_tracker.start()
         self.input_monitor.start()
