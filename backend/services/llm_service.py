@@ -6,6 +6,7 @@ import time
 from typing import Any
 
 from backend.config import settings
+from backend.domain.ports.services import ILLMService
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class LLMServiceError(Exception):
     pass
 
 
-class LLMService:
+class LLMService(ILLMService):
     """Service class coordinating LLM prompt completion requests."""
 
     def __init__(

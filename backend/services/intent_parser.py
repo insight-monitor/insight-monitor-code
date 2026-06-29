@@ -5,6 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from backend.domain.entities.intent_record import IntentRecord
+from backend.domain.ports.services import IIntentParser
 
 
 class IntentParserError(Exception):
@@ -12,7 +13,7 @@ class IntentParserError(Exception):
     pass
 
 
-class IntentParser:
+class IntentParser(IIntentParser):
     """Parser that validates and transforms LLM response to IntentRecord."""
 
     def parse(
@@ -93,7 +94,7 @@ class IntentParser:
             )
 
     @staticmethod
-    def _safe_float(value: Any, default: float | None = None) -> float | None:
+    def _safe_float(value: Any, default: float = 0.0) -> float:
         if value is None:
             return default
         try:

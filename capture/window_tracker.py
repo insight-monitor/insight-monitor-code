@@ -88,7 +88,7 @@ class WindowTracker:
         if process_name and process_name.lower() in BROWSER_PROCESSES:
             tab_title = self._get_browser_tab_title(window_id)
             if tab_title:
-                info["url"] = self.extract_url_from_title(tab_title)
+                info["url"] = extract_url_from_title(tab_title)
                 info["browser_tab_title"] = tab_title
 
         return info

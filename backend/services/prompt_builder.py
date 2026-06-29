@@ -1,6 +1,9 @@
 """Prompt builder for LLM intent classification pipeline."""
 
 import json
+from typing import Any
+
+from backend.domain.ports.services import IPromptBuilder
 
 
 SYSTEM_INSTRUCTION = """You are an impartial activity analyst. Your task is to analyze work/study sessions and classify them into the structured JSON output described below.
@@ -102,13 +105,13 @@ OUTPUT_SCHEMA = {
 }
 
 
-class PromptBuilder:
+class PromptBuilder(IPromptBuilder):
     """Builds structured prompts for session classification."""
 
     def __init__(self, user_context: dict | None = None):
         self.user_context = user_context or {}
 
-    def build(self, session: dict, events: list[dict]) -> str:
+    def build(self, session: dict[str, Any], events: list[dict[str, Any]]) -> str:
         """Construct the final prompt from system instruction, environmental data, and output schema."""
         env_context = self._build_environmental_context(session, events)
         user_ctx = self._build_user_context()
