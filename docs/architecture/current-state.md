@@ -4,13 +4,13 @@ type: reference
 domain: architecture
 priority: critical
 status: accepted
-version: 1.0.0
-updated: 2026-06-25
+version: 2.0.0
+updated: 2026-06-29
 ---
 
-# Current Architecture State (as of 2026-06-25)
+# Current Architecture State (as of 2026-06-29)
 
-This document is an honest assessment of the current architecture **after** the Clean Architecture migration (ARCH-0, PR #43). It complements the aspirational documents in this directory by describing what actually exists.
+This document is an honest assessment of the current architecture **after** the Clean Architecture migration (ARCH-0, PR #75). The legacy `backend/pipeline/` directory has been fully removed; all logic migrated to use cases and services. It complements the aspirational documents in this directory by describing what actually exists.
 
 ## Actual Directory Structure
 
@@ -29,14 +29,12 @@ backend/
 ├── routes/                    # Presentation Layer (FastAPI routers)
 │   ├── events.py              # POST/GET /events, /events/batch, /events/session/{id}
 │   ├── sessions.py            # GET /sessions, /sessions/{id}, /sessions/{id}/intent, POST /sessions/{id}/close
-│   └── health.py              # GET /health
-├── pipeline/                  # Legacy/transitional pipeline modules
-│   ├── session_builder.py     # Groups events into sessions
-│   ├── inference_pipeline.py  # Orchestrates LLM inference
-│   ├── prompt_builder.py      # Builds Gemini prompts
-│   └── intent_parser.py       # Parses LLM JSON responses
+│   ├── health.py              # GET /health, POST /heartbeat
+│   └── tickets.py             # Full CRUD /tickets, /tickets/{id}/comments
 ├── services/                  # External service adapters
-│   └── llm_service.py         # Gemini API client
+│   ├── llm_service.py         # OpenAI / Gemini API client
+│   ├── prompt_builder.py      # Builds LLM prompts (migrated from legacy pipeline)
+│   └── intent_parser.py       # Parses LLM JSON responses (migrated from legacy pipeline)
 ├── config.py                  # Centralized settings (pydantic-settings)
 ├── main.py                    # FastAPI app entry point
 ├── tests/                     # Tests
@@ -61,13 +59,13 @@ backend/
 | **ARCH-9** | Done | TypeScript types auto-generated from Pydantic via `scripts/generate_types.py`; run `npm run generate:types` |
 | **ARCH-10** | Done | This document, ADRs, and related docs updated |
 | **ARCH-11** | Done | Unit tests with InMemory repos; `pytest -m unit` in < 2s |
+| **ARCH-0** | Done (PR #75) | Legacy `backend/pipeline/` removed — all logic migrated to use cases and services |
 
 ## Remaining Technical Debt
 
-1. **Legacy pipeline modules**: `backend/pipeline/` still exists as a transitional directory. Some logic duplicates what use cases do. Eventually the use cases should fully absorb pipeline responsibilities.
-2. **No ADR process**: Architecture decisions were made during PR #43 without formal ADR records. This is being addressed in this update.
-3. **Inference pipeline v0.1**: The `InferIntentUseCase` and LLM service exist but haven't been battle-tested with real Gemini traffic.
-4. **Test coverage**: Only unit tests for use cases exist. Integration tests for SQLite and E2E tests are minimal.
+1. **No ADR process**: Architecture decisions were made during PR #43 without formal ADR records. This is being addressed in this update.
+2. **Inference pipeline v0.1**: The `InferIntentUseCase` and LLM service exist but haven't been battle-tested with real Gemini traffic.
+3. **Test coverage**: Unit tests exist for use cases. Integration tests for SQLite and E2E tests need expansion.
 
 ## Target Architecture
 
@@ -79,7 +77,7 @@ Routes → Use Cases (Application) → Ports (Domain)
                               Infrastructure (implements ports)
 ```
 
-Every new feature = new Use Case class. No modifications to existing pipeline modules.
+Every new feature = new Use Case class. Pipeline modules have been fully absorbed into use cases + services.
 
 ## Key Metrics
 
