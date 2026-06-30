@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n \"API,DASH\" -c \"blue,green\" \"npm run backend\" \"npm run dashboard:dev\"",
+    "dev": "concurrently -n \"API,DASH,CAPT\" -c \"blue,green,yellow\" \"npm run backend\" \"npm run dashboard:dev\" \"npm run capture\"",
     "backend": "cd backend && ../scripts/run-backend.sh",
     "dashboard:dev": "npm run dev --prefix dashboard",
     "dashboard:build": "npm run build --prefix dashboard",
-    "capture": "cd capture && python agent.py",
+    "capture": "cd backend && PYTHONPATH=.. poetry run python -m capture.agent",
     "seed": "cd backend && ../scripts/run-backend.sh seed",
     "simulate": "cd backend && ../scripts/run-backend.sh simulate",
-    "generate:types": "python scripts/generate_types.py"
+    "generate:types": "python3 scripts/generate_types.py"
   },
   "dependencies": {
     "concurrently": "^10.0.3"

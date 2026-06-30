@@ -18,8 +18,7 @@ class ScreenshotCapture:
             path = self.output_dir / f"screenshot_{timestamp}.png"
 
             with mss.mss() as sct:
-                monitor = sct.monitors[1]
-                sct.shot(mon=monitor, output=str(path))
+                sct.shot(mon=1, output=str(path))
 
             logger.debug("Screenshot saved: %s", path)
             return path
