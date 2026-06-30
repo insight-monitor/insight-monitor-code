@@ -279,13 +279,13 @@ class InputMonitor:
                 if not readables:
                     continue
                 for fd in readables:
-                    dev = devices.get(fd)
-                    if dev is None:
+                    device = devices.get(fd)
+                    if device is None:
                         continue
                     try:
-                        self._process_evdev_events(dev)
+                        self._process_evdev_events(device)
                     except OSError as e:
-                        logger.debug("evdev read on %s failed: %s", dev.path, e)
+                        logger.debug("evdev read on %s failed: %s", device.path, e)
                         # Device disappeared (e.g. unplugged). Drop it.
                         try:
                             del devices[fd]
