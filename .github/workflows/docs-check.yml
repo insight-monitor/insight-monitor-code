@@ -1,0 +1,41 @@
+name: Docs Consistency Check
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**/*.py'
+      - 'docs/**/*.md'
+
+jobs:
+  verify-db-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify DB schema matches docs
+        run: python scripts/verify_db_schema.py
+
+  verify-api-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify API routes match docs
+        run: python scripts/verify_api_docs.py
+
+  verify-adr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check ADR for arch changes
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}..HEAD -- backend/domain backend/application backend/infrastructure || true)
+          if [ -n "$CHANGED" ]; then
+            REF_DATE=$(git show -s --format=%cI origin/${{ github.base_ref }} 2>/dev/null || echo "1970-01-01")
+            ADR_COUNT=$(find docs/architecture/adr -name "*.md" -newermt "$REF_DATE" 2>/dev/null | wc -l)
+            if [ "$ADR_COUNT" -eq 0 ]; then
+              echo "::error::Architectural changes detected but no new ADR in docs/architecture/adr/"
+              exit 1
+            fi
+          fi
+          echo "ADR check passed"

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+*.egg
+.venv/
+venv/
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+frontend/
+
+# Node
+node_modules/
+
+# Env
+.env
+
+# OS
+.DS_Store
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+dashboard/dist/
+
+# Debug / scratch
+debug_output.txt
+debug_parse_output.txt
+debug_parse.py
+inspect_db.py
+scripts/debug_parse.py
+scripts/debug_parse_output.txt
+
+# Local agent skills (private per-dev)
+.agents/
+skills-lock.json

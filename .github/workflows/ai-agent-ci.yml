@@ -1,0 +1,135 @@
+name: AI Agent CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+
+jobs:
+  backend:
+    name: Backend (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Dependencies
+        run: poetry install --no-interaction --sync
+
+      - name: Type Check (mypy)
+        run: poetry run mypy .
+
+      - name: Lint (ruff)
+        run: poetry run ruff check .
+
+      - name: Unit Tests
+        run: poetry run pytest -m unit --tb=short -q --maxfail=5
+
+      - name: Integration Tests
+        run: poetry run pytest -m integration --tb=short -q --maxfail=5
+
+      - name: Security Audit (pip-audit)
+        run: pip install pip-audit && poetry run pip-audit --desc --format=json || true
+
+  frontend:
+    name: Frontend (TypeScript/React)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./dashboard
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Type Check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Security Audit
+        run: npm audit --audit-level=high || true
+
+  security:
+    name: Security Scans
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha || github.sha }}
+          head: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Gitleaks Secret Scan
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.0/gitleaks_8.18.0_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          sudo tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin
+          gitleaks detect --source . --verbose --redact --no-git
+
+  context-check:
+    name: Context Files Updated
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check .ai-context/ updated
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          if echo "$CHANGED" | grep -qE '\.(py|ts|tsx)$'; then
+            if ! echo "$CHANGED" | grep -q '\.ai-context/'; then
+              echo "::error::Code changed but .ai-context/ not updated!"
+              echo "Changed files: $CHANGED"
+              exit 1
+            fi
+          fi
+          echo "Context check passed"
+
+  all-checks:
+    name: All Checks Passed
+    needs: [backend, frontend, security, context-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summary
+        run: echo "All checks passed - ready for merge"

@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "insight-monitor-backend"
+version = "0.1.0"
+description = "Insight Monitor Backend API"
+authors = ["Insight Monitor"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+fastapi = ">=0.115.0"
+uvicorn = {extras = ["standard"], version = ">=0.30.0"}
+pydantic = ">=2.7.0"
+google-genai = ">=1.0.0"
+openai = ">=1.0.0"
+python-multipart = ">=0.0.9"
+pillow = ">=11.0.0"
+httpx = ">=0.28.0"
+mss = ">=10.0.0"
+pynput = ">=1.7.0"
+email-validator = "^2.3.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+mypy = "*"
+pytest = ">=8.0,<9.0"
+pytest-cov = "*"
+pip-audit = "*"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "../tests"]
+python_files = ["test_*.py", "validate_*.py"]
+markers = [
+    "unit: fast unit tests using InMemory repos (no DB, no network)",
+    "integration: integration tests that use SQLite on disk",
+]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,348 +1,193 @@
-<div align="center">
-  <h1>Insight Monitor</h1>
-  <p><strong>Contextual Activity Intelligence</strong></p>
-  <p>Monitoring that understands <em>intent</em>, not just apps.</p>
-</div>
+# Insight Monitor — Contextual Activity Intelligence
+
+Monitoring that understands *intent*, not just apps.
 
 ---
 
-## Overview
+## Quick Start
 
-Insight Monitor is a full-stack system that collects endpoint activity data and uses **multimodal AI** to infer task context, work relevance, and probable user intent. Unlike traditional monitoring tools that classify by application or domain name (e.g., "YouTube = distraction"), Insight Monitor evaluates context — combining window titles, screenshots, input patterns, and temporal sequences — to produce **probabilistic, evidence-based classifications**.
+### Prerequisites
 
-### Core Philosophy
-
-- **Transparency.** What is collected, why, and what is inferred — all visible to the monitored person.
-- **Challengeability.** Every conclusion has an evidence trace and can be disputed.
-- **Uncertainty as a feature.** Every inference carries a confidence score (0.0–1.0). The system reports what it does not know.
-- **Individual benefit.** The monitored person must gain from the system's presence.
-- **No false binaries.** Nothing is "productive" or "unproductive" in absolute terms — always contextual.
-
-### Key Differentiator
-
-| Approach | Example | Result |
-|---|---|---|
-| Naive monitoring | YouTube open → | Marked as distraction |
-| Insight Monitor | YouTube + VS Code + MDN docs → | Classified as **work-relevant research** (confidence: 0.85) |
-| Insight Monitor | YouTube + full-screen entertainment + no input → | Classified as **personal / probable break** |
-
----
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────────────────┐
-│  Layer 1 — Capture Agent (Python)                        │
-│  Runs on user's machine (Linux/Windows)                  │
-│  Polls OS APIs: window title, screenshots, input         │
-│  Produces RawEvents → POST to local FastAPI              │
-└────────────────────────┬─────────────────────────────────┘
-                         │ HTTP (localhost:8000)
-┌────────────────────────▼─────────────────────────────────┐
-│  Layer 2 — Backend API (FastAPI + SQLite)                │
-│  Receives RawEvents, stores in SQLite                    │
-│  SessionBuilder groups events into sessions              │
-│  On session close: builds SessionContext                 │
-│  Calls Gemini API for intent inference                   │
-├────────────────┬──────────────────────┬──────────────────┤
-│                │                      │                  │
-│         SQLite DB               Gemini 2.0 Flash         │
-│    (raw_events,              (multimodal: screenshots    │
-│     sessions,                 + text context)            │
-│     intent_records)                                      │
-│                │                                         │
-│                │ REST API                                │
-┌────────────────▼─────────────────────────────────────────┐
-│  Layer 3 — Dashboard (React + Vite + TailwindCSS)        │
-│  Fetches sessions and intent records via REST            │
-│  Displays timeline, classifications, screenshots         │
-└──────────────────────────────────────────────────────────┘
+```bash
+python3 --version   # >= 3.11
+node --version      # >= 20
+npm --version       # >= 9
 ```
 
-### Technology Stack
+### Install dependencies
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| **Capture Agent** | Python 3.11+ | OS-level hooks for window tracking, screenshots, input monitoring |
-| **Backend API** | FastAPI + Uvicorn | REST API with automatic OpenAPI docs |
-| **Database** | SQLite | Zero-config, file-based storage |
-| **LLM** | Gemini 2.0 Flash | Native multimodal inference (screenshots + text) |
-| **Frontend** | React 18 + TypeScript | Dynamic dashboard with real-time updates |
-| **Bundler** | Vite | Fast dev server and build tool |
-| **Styling** | TailwindCSS | Utility-first CSS framework |
+```bash
+cd backend && poetry install && cd ..
+cd dashboard && npm install && cd ..
+npm install
+```
+
+### Run Modes
+
+| Mode | Command | What Runs | Port(s) | Use Case |
+|------|---------|-----------|---------|----------|
+| **Full stack (dev)** | `npm run dev` | Backend + Dashboard | 8002, 5173 | Daily development |
+| **Backend only** | `npm run backend` | FastAPI + auto-reload | 8002 | API work, testing |
+| **Frontend only** | `npm run dashboard:dev` | Vite dev server | 5173 | UI work (needs backend running) |
+| **Capture agent** | `npm run capture` | Python agent → API | — | Real monitoring (needs backend) |
+| **Seed test data** | `npm run seed` | SQLite ← sample sessions | — | Dashboard dev without agent |
+| **Simulate events** | `npm run simulate` | HTTP → API → SQLite | — | Test inference pipeline |
+| **DB viewer (sqlite-web)** | `cd infrastructure/db-mvp && docker compose up -d` | Web UI for SQLite | 8081 | Browse raw tables, run SQL |
+
+### Database (SQLite) — Auto-Created
+
+The database file `backend/data/insight_monitor.db` is **auto-created** when the backend starts for the first time (via `Database._init_schema()` in `backend/infrastructure/db/sqlite/database.py`). No separate database server is needed.
+
+> **Note**: The `infrastructure/db-mvp/` docker-compose starts **sqlite-web** (a web UI viewer at `http://localhost:8081`), **NOT a database server**. It mounts the existing SQLite file for inspection.
+
+### Load test data
+
+```bash
+npm run seed        # Creates sample sessions in SQLite
+npm run simulate    # Sends simulated Riwi/BPO events to the API
+```
 
 ---
 
 ## Project Structure
 
 ```
-insight-monitor/
-├── capture/                        # Layer 1 — Capture agent
-│   ├── agent.py                    # Main loop: poll OS APIs, send events
-│   ├── window_tracker.py           # xdotool/xprop wrapper for window focus
-│   ├── screenshot_capture.py       # mss wrapper for periodic screenshots
-│   ├── input_monitor.py            # pynput-based input frequency capture
-│   └── event_sender.py             # HTTP client for POSTing events to API
+├── capture/              Layer 1 — Capture Agent (Python)
+│   ├── agent.py          Main loop: polls OS APIs, sends events
+│   ├── window_tracker.py xdotool + xprop (window focus, URL context)
+│   ├── screenshot_capture.py  mss wrapper (periodic screenshots)
+│   ├── input_monitor.py  pynput (clicks/min, keystrokes/min)
+│   └── event_sender.py   HTTP client → POST events to API
 │
-├── backend/                        # Layer 2 — API + Storage
-│   ├── backend/
-│   │   ├── main.py                 # FastAPI application entry point
-│   │   ├── models/                 # Pydantic schemas
-│   │   │   ├── raw_event.py        # RawEvent, EventType enums
-│   │   │   ├── session_context.py  # Session aggregation model
-│   │   │   └── intent_record.py    # LLM inference output model
-│   │   ├── storage/
-│   │   │   ├── database.py         # SQLite connection manager
-│   │   │   └── repositories.py     # CRUD for events, sessions, intents
-│   │   ├── pipeline/               # Session building + inference
-│   │   │   ├── session_builder.py  # Groups RawEvents into sessions
-│   │   │   ├── prompt_builder.py   # Builds Gemini prompt with context
-│   │   │   └── intent_parser.py    # Parses Gemini JSON response
-│   │   ├── services/
-│   │   │   └── llm_service.py      # Gemini API client
-│   │   └── routes/
-│   │       ├── health.py           # GET /health
-│   │       ├── events.py           # POST /events, GET /events
-│   │       └── sessions.py         # GET /sessions, GET /sessions/{id}
-│   ├── pyproject.toml              # Poetry project configuration
-│   └── poetry.lock
+├── backend/              Layer 2 — Backend API (Clean Architecture)
+│   ├── application/      Use Cases (IngestEvent, BuildSessions, InferIntent, GetSession)
+│   ├── domain/           Entities (RawEvent, IntentRecord, SessionContext) and Ports (Repository interfaces)
+│   ├── infrastructure/   SQLite/InMemory repos, DI Composition Root (di.py), Unit of Work
+│   ├── routes/           FastAPI routers (health, events, sessions) using DI
+│   ├── pipeline/         Legacy: session builder, inference pipeline, prompt builder, intent parser
+│   ├── services/         LLM service (Gemini API client)
+│   ├── tests/            Unit tests (InMemory repos) and integration tests
+│   ├── config.py         Centralized settings (pydantic-settings)
+│   ├── main.py           FastAPI app entry point
+│   ├── pyproject.toml
+│   └── data/             SQLite database (gitignored)
 │
-├── dashboard/                      # Layer 3 — Frontend
+├── dashboard/            Layer 3 — Frontend (React + TypeScript + Vite + TailwindCSS)
 │   ├── src/
-│   │   ├── App.tsx                 # Main application component
-│   │   ├── main.tsx                # Entry point
-│   │   └── index.css               # TailwindCSS imports
-│   ├── vite.config.ts              # Vite config with proxy to backend
-│   ├── tsconfig.json               # TypeScript configuration
-│   └── package.json                # npm dependencies
+│   │   ├── App.tsx       Main component
+│   │   ├── main.tsx      Entry point
+│   │   └── api/          API client + TypeScript types
+│   └── vite.config.ts    Dev server on :5173, proxies /api → :8002
 │
-├── scripts/
-│   ├── simulate_session.py         # Generate realistic BPO/Riwi test data
-│   └── seed_db.py                  # Populate SQLite with sample sessions
-│
-├── frontend/                       # Reference: legacy Vanilla JS frontend
-├── .env.example                    # Environment variable reference
-├── .gitignore
-├── README.md
-└── package.json                    # Root npm scripts
+├── scripts/              simulate_session.py, seed_db.py, run-backend.sh
+├── frontend/             ⚠️ LEGACY — AI Support Desk (Vanilla JS, NOT Insight Monitor)
+│                         See docs/development/legacy-frontend.md
+├── docs/                 Technical documentation
+├── .env.example
+└── package.json          Root scripts (npm run dev = both services)
 ```
 
 ---
 
 ## API Reference
 
-The backend provides a REST API with automatic OpenAPI documentation at `http://localhost:8000/docs`.
-
-### Endpoints
+Full interactive docs at `http://localhost:8002/docs`.
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | Health check and agent status |
+| `GET` | `/health` | Health check + agent status |
 | `POST` | `/events` | Ingest a single RawEvent |
 | `POST` | `/events/batch` | Ingest multiple RawEvents |
-| `GET` | `/events` | List recent events |
-| `GET` | `/events/session/{id}` | List events for a session |
-| `GET` | `/sessions` | List sessions (optional status filter) |
-| `GET` | `/sessions/{id}` | Session detail with intent |
+| `GET` | `/events` | List recent events (`?limit=50`) |
+| `GET` | `/events/session/{id}` | Events for a specific session |
+| `GET` | `/sessions` | List sessions (`?status=open&limit=50`) |
+| `GET` | `/sessions/{id}` | Session detail with events + intent |
+| `POST` | `/sessions/{id}/close` | Manually close a session |
 | `GET` | `/sessions/{id}/intent` | Session intent record only |
 
-### Data Models
-
-**RawEvent** — the atomic unit of captured activity:
-```json
-{
-  "event_id": "uuid",
-  "event_type": "window_focus|screenshot|input_activity|url_context|session_boundary",
-  "timestamp": "2026-06-16T10:00:00Z",
-  "source": "capture-agent",
-  "window_title": "Visual Studio Code",
-  "process_name": "code",
-  "pid": 1234,
-  "screenshot_path": "/data/screenshots/...png",
-  "clicks_per_min": 15.5,
-  "keystrokes_per_min": 42.3,
-  "url": "https://developer.mozilla.org/..."
-}
-```
-
-**SessionContext** — aggregated view of a work session:
-```json
-{
-  "session_id": "uuid",
-  "start_time": "2026-06-16T09:00:00Z",
-  "end_time": "2026-06-16T10:30:00Z",
-  "duration_seconds": 5400,
-  "app_sequence": ["code", "firefox", "discord", "code"],
-  "event_count": 47,
-  "status": "closed"
-}
-```
-
-**IntentRecord** — AI inference output with confidence scoring:
-```json
-{
-  "record_id": "uuid",
-  "session_id": "uuid",
-  "session_type": "applied_learning",
-  "goal": "Build React component with API integration",
-  "goal_confidence": 0.85,
-  "friction_points": ["Switched between 3 tabs to find API reference"],
-  "category": "skill_development",
-  "category_confidence": 0.78,
-  "evidence": ["VS Code open", "MDN docs open"]
-}
-```
-
 ---
 
-## Getting Started
+## Scripts Reference
 
-### Prerequisites
-
-- **Python** 3.11 or higher
-- **Node.js** 20 or higher
-- **Poetry** (Python package manager)
-- **Linux** (Ubuntu 20.04/22.04 recommended) with `xdotool`, `xprop`, `wmctrl`
-
-### Installation
-
-```bash
-# 1. Install Python dependencies
-cd backend
-poetry install
-cd ..
-
-# 2. Install frontend dependencies
-cd dashboard
-npm install
-cd ..
-```
-
-### Running
-
-Start the backend (terminal 1):
-```bash
-cd backend
-poetry run uvicorn backend.main:app --reload --port 8000
-```
-
-Start the dashboard (terminal 2):
-```bash
-cd dashboard
-npm run dev
-```
-
-Open **http://localhost:5173** in your browser.
-
-### Generate Test Data
-
-```bash
-# Populate SQLite with sample sessions
-export PATH="$HOME/.local/bin:$PATH" && cd backend && poetry run python ../scripts/seed_db.py
-
-# Simulate realistic activity events
-export PATH="$HOME/.local/bin:$PATH" && cd backend && poetry run python ../scripts/simulate_session.py
-```
-
----
-
-## Use Cases
-
-### Riwi Learning Environment
-
-In a software bootcamp (like Riwi), the same activity can mean different things depending on context:
-
-| Activity | Without Context | With Insight Monitor |
-|---|---|---|
-| YouTube tutorial | Distraction | **Skill development** (if paired with IDE + docs) |
-| Discord chat | Distraction | **Peer collaboration** (if during project work) |
-| Reading documentation | Low activity | **Research / self-learning** |
-| ChatGPT | Cheating | **Learning tool** (if used for understanding) |
-
-### BPO / Call Center
-
-| Activity | Classification |
+| Command | Description |
 |---|---|
-| CRM + SAP + softphone simultaneously | **Active customer call** |
-| Post-call documentation | **Task wrap-up** |
-| Browser research during call | **Work-relevant inquiry** |
-
-### Personal Productivity
-
-- Discover when you actually focus best
-- See what tasks drain vs. energize you
-- Track progress over weeks, not just days
-- All data stays yours — full control over sharing
+| `npm run dev` | Start backend + dashboard in one terminal |
+| `npm run backend` | Start backend only |
+| `npm run dashboard:dev` | Start dashboard only |
+| `npm run seed` | Load test sessions into SQLite |
+| `npm run simulate` | Simulate Riwi/BPO activity events |
+| `npm run capture` | Start the capture agent (screenshots + input monitor) |
+| `npm run dashboard:build` | Production build of dashboard |
+| `npm run generate:types` | Generate TS types from Pydantic models |
 
 ---
 
-## MVP Scope
+## Real-Time Monitoring: What You See Where
 
-### Included
+| Component | Interface | What's Visible | Refresh / Frequency |
+|-----------|-----------|----------------|---------------------|
+| **Dashboard** | `http://localhost:5173` | Live agent status (green/red), sessions table with: status, start time, duration, event count, apps, inferred type, goal, confidence | Auto-polls every **10 seconds** |
+| **Capture Agent** | Terminal (`npm run capture`) | Startup confirmation, each event sent (window_focus, screenshot, input_activity) — logged at INFO level | Continuous (window/input every 5s, screenshot every 30s) |
+| **Backend API** | Terminal (`npm run backend`) | Uvicorn access logs (HTTP requests), startup banner | Per request + background task cycles |
+| **sqlite-web** | `http://localhost:8081` (after `docker compose up -d` in `infrastructure/db-mvp/`) | Raw tables: `raw_events`, `sessions`, `intent_records` — run SQL, export CSV | Real-time (reads DB file directly) |
 
-- Active window tracking with `xdotool` / `xprop`
-- Periodic screenshots with `mss` (configurable interval)
-- Input frequency monitoring (clicks/min, keystrokes/min) — no content capture
-- URL context from browser tab titles
-- SQLite storage for events, sessions, and intent records
-- REST API with event ingestion and session retrieval
-- Session builder with inactivity gap detection (8 min default)
-- Gemini-powered intent inference (multimodal: screenshots + text)
-- React dashboard with session list and detail views
-- Simulation scripts for test data generation
+### Typical Development Flow
+1. **Start backend + dashboard**: `npm run dev` → see dashboard at :5173
+2. **Start capture agent**: `npm run capture` (separate terminal) → see events being sent
+3. **Watch dashboard**: Sessions appear as agent sends events → session builder groups them → inference runs → type/goal/confidence populate
+4. **Debug data**: Open sqlite-web at :8081 to query raw tables
 
-### Excluded (Post-MVP)
+---
 
-| Feature | Planned |
+## Team Guide
+
+### Capture Agent (Python) — Working (requires X11)
+Files: `capture/`. Captures screenshots (`mss`), input frequency (`pynput`), window focus + browser tabs (`xdotool` + `xprop`). Sends events to API via HTTP. Configurable via env vars. Requires Linux with X11 (not Wayland).
+
+### Backend API (FastAPI + SQLite + Clean Architecture) — Working with all CRUD routes + session builder
+Files: `backend/`. Includes Clean Architecture layers (Domain, Application, Infrastructure), DI composition root, unit of work for transaction boundaries, background session builder, batch ingest, inference pipeline (LLM service, prompt builder, intent parser), and manual close endpoint.
+
+### Inference Pipeline (Gemini API) — Implemented
+Files: `backend/pipeline/` + `backend/services/`. Includes `LLMService` (Gemini API client), `PromptBuilder` (system prompt assembly), `IntentParser` (LLM JSON response parsing), and `InferIntentUseCase` orchestrating all three.
+
+### Frontend (React + TypeScript + Tailwind) — Live health indicator + session list
+Files: `dashboard/`. Shows live backend status, session table (status, duration, events, apps). Next: detail view, confidence badges, timeline.
+
+---
+
+## Testing
+
+```bash
+# Smoke tests (after npm run dev)
+curl http://localhost:8002/health
+curl -X POST http://localhost:8002/events \
+  -H "Content-Type: application/json" \
+  -d '{"event_id":"test-1","event_type":"window_focus","timestamp":"2026-06-16T10:00:00","source":"manual","window_title":"Test","process_name":"bash","pid":999}'
+curl http://localhost:8002/events?limit=5
+curl http://localhost:8002/sessions
+```
+
+---
+
+## Technical Documentation
+
+Architecture, data model, inference framework, API reference, setup guide, and branching strategy live in the **`docs/`** directory:
+
+| Document | Location |
 |---|---|
-| Wayland support | `ydotool` fallback; full portal API support |
-| Browser extension for full URLs | Chrome/Firefox extension post-MVP |
-| Multi-tenant isolation | Add tenant_id + middleware |
-| WebSocket real-time updates | When sub-second updates needed |
-| User authentication (JWT) | Hardcoded demo mode for MVP |
-| macOS / Windows native support | Secondary targets |
-| GUI installer (MSI/DEB) | Package with PyInstaller |
-| Report generation (PDF/CSV) | Celery-based worker |
+| Architecture | `docs/architecture/README.md` |
+| Current state | `docs/architecture/current-state.md` |
+| ADR (decisions) | `docs/architecture/adr/` |
+| Scaling path | `docs/architecture/scaling-path.md` |
+| Error philosophy | `docs/architecture/error-philosophy.md` |
+| Data acquisition | `docs/data-model/acquisition.md` |
+| Database schema | `docs/data-model/database-schema.md` |
+| Inference framework | `docs/inference/` |
+| Configuration | `docs/configuration/README.md` |
+| API reference | `docs/api/README.md` |
+| Capture agent | `docs/capture-agent/README.md` |
+| Development setup | `docs/development/setup.md` |
+| Git branching | `docs/development/branching.md` |
+| Legacy frontend | `docs/development/legacy-frontend.md` |
 
----
-
-## Confidence Model
-
-Every inference carries a confidence score in the range **[0.0, 1.0]**:
-
-| Range | Classification | Display |
-|---|---|---|
-| ≥ 0.8 | High confidence | Green badge with cited evidence |
-| 0.5 – 0.79 | Moderate confidence | Yellow badge, alternatives included |
-| 0.3 – 0.49 | Low confidence | Red badge, marked as uncertain |
-| < 0.3 | Insufficient evidence | Grey badge, "insufficient data" |
-
----
-
-## Error Philosophy
-
-> **The cost of a false accusation exceeds the cost of a missed detection.**
-
-| Error Type | Tolerance | Behavior |
-|---|---|---|
-| False positive (productive work → distraction) | Near zero | Default to ambiguous, never accuse |
-| False negative (actual distraction → missed) | Acceptable | Better no classification than wrong |
-| Sensitive data persisted | Never | Aggressive redaction, even at cost of losing context |
-
----
-
-## Documentation
-
-Full project documentation and decision records are available at:
-**[github.com/insight-monitor/insight-monitor-docs](https://github.com/insight-monitor/insight-monitor-docs)**
-
-Key documents:
-- [MVP Definition](https://github.com/insight-monitor/insight-monitor-docs/tree/topic/MVP/700-MVP/MVP-Definition.md)
-- [MVP Architecture](https://github.com/insight-monitor/insight-monitor-docs/tree/topic/MVP/700-MVP/MVP-Architecture.md)
-- [MVP 14-Day Plan](https://github.com/insight-monitor/insight-monitor-docs/tree/topic/MVP/700-MVP/MVP-14-Day-Plan.md)
-
----
-
-## License
-
-Private — Insight Monitor. All rights reserved.
+Non-technical documentation (narrative, use cases, limitations, risks) lives in [insight-monitor-docs](https://github.com/insight-monitor/insight-monitor-docs).

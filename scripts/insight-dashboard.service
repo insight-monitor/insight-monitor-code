@@ -1,0 +1,14 @@
+[Unit]
+Description=Insight Monitor Dashboard
+After=insight-backend.service
+Wants=insight-backend.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/npm run dev -- --host
+WorkingDirectory=%h/insight-monitor-code
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
