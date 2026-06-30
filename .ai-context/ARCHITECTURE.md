@@ -39,10 +39,16 @@ domain ← application ← infrastructure
 - ARCH-5: Infrastructure repos → infrastructure/persistence/
 - ARCH-6: DI composition root → container.py
 - ARCH-7: Transaction boundaries → Use cases manage transactions
-- ARCH-8: Capture agent resilience → Post-MVP (optional)
+- ARCH-8: Capture agent resilience → Done (evdev backend, pynput fallback, idle detection, event buffer with retries)
 - ARCH-9: TypeScript generation → scripts/generate_types.py
 - ARCH-10: Update docs → docs/architecture/
 - ARCH-11: Unit tests with mocks → tests/unit/
+- Hotfix #86: Python3/capture command fixes → Done
+- Hotfix #87: LLM_BASE_URL config → Done
+- Hotfix #89: Wayland window tracking via GNOME extension → Done
+- Hotfix #90: evdev input monitor (Wayland-compatible) → Done
+- Hotfix #91: Session auto-close always runs sweep → Done
+- Hotfix #92: Idle detection (IDLE_THRESHOLD_SECONDS) → Done
 
 ## Key Patterns
 - **Repository Pattern**: Ports in application/ports, adapters in infrastructure/persistence
