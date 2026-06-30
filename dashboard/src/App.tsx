@@ -1,5 +1,21 @@
 import { useEffect, useState } from "react"
-import { getHealth, getSessions, getSession, type Health, type Session, type SessionDetail, type RawEvent } from "./api/client"
+import { motion, AnimatePresence } from "framer-motion"
+import { Activity, ArrowLeft, Monitor, ChevronDown, Sparkles } from "lucide-react"
+import { getHealth, getSessions, getSession, type Health, type Session, type SessionDetail } from "./api/client"
+
+const confidenceColor = (c: number | null) => {
+  if (c == null) return "text-white/40"
+  if (c >= 0.8) return "text-[#1d9e75]"
+  if (c >= 0.5) return "text-[#ef9f27]"
+  return "text-[#d85a30]"
+}
+
+const bgConfidence = (c: number | null) => {
+  if (c == null) return ""
+  if (c >= 0.8) return "bg-[#1d9e75]/10 text-[#1d9e75] border-[#1d9e75]/20"
+  if (c >= 0.5) return "bg-[#ef9f27]/10 text-[#ef9f27] border-[#ef9f27]/20"
+  return "bg-[#d85a30]/10 text-[#d85a30] border-[#d85a30]/20"
+}
 
 function App() {
   const [health, setHealth] = useState<Health | null>(null)
@@ -79,128 +95,153 @@ function App() {
 
   function statusBadge(status: string) {
     const colors: Record<string, string> = {
-      open: "bg-blue-100 text-blue-800",
-      closed: "bg-gray-100 text-gray-600",
+      open: "border-[#1d9e75]/30 text-[#1d9e75] bg-[#1d9e75]/8",
+      closed: "border-white/10 text-white/50 bg-white/[0.03]",
     }
     return (
-      <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[status] || "bg-gray-100"}`}>
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-wider ${colors[status] || "border-white/10 text-white/50"}`}>
+        {status === "open" && <span className="h-1.5 w-1.5 rounded-full bg-[#1d9e75]" />}
         {status}
       </span>
     )
   }
 
-  function eventIcon(type: string) {
+  function eventTypeMeta(type: string) {
     switch (type) {
-      case "window_focus": return "🖥️"
-      case "screenshot": return "📸"
-      case "input_activity": return "⌨️"
-      default: return "📋"
-    }
-  }
-
-  function formatEvent(event: RawEvent) {
-    const time = new Date(event.timestamp).toLocaleTimeString()
-    switch (event.event_type) {
-      case "window_focus":
-        return `${time} — ${event.window_title || "unknown"} (${event.process_name || "?"})`
-      case "screenshot":
-        return `${time} — Screenshot captured`
-      case "input_activity":
-        return `${time} — Input: ${event.clicks_per_min ?? 0} clicks/min, ${event.keystrokes_per_min ?? 0} keys/min`
-      default:
-        return `${time} — ${event.event_type}`
+      case "window_focus": return { icon: Monitor, label: "Window Focus" }
+      case "screenshot": return { icon: Activity, label: "Screenshot" }
+      case "input_activity": return { icon: Activity, label: "Input" }
+      default: return { icon: Activity, label: type }
     }
   }
 
   if (selectedSession) {
     const s = selectedSession
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <div className="min-h-screen">
+        <header className="sticky top-0 z-30 mx-6 mt-6">
+          <div className="flex items-center justify-between rounded-full border border-white/8 bg-[#0a0a0e]/80 px-4 py-2 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_40px_-20px_rgba(0,0,0,0.8)]">
+            <div className="flex items-center gap-3">
               <button
                 onClick={closeDetail}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="pill pill-hover text-xs cursor-pointer"
               >
-                ← Back to Sessions
+                <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Back
               </button>
-              <h1 className="text-xl font-bold text-gray-900">Session Detail</h1>
+              <span className="hidden sm:inline text-sm font-medium text-white/70">Session Detail</span>
+            </div>
+            <div className="flex items-center gap-2">
               {statusBadge(s.status)}
             </div>
           </div>
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 uppercase">Start Time</p>
-              <p className="text-sm font-medium text-gray-900">{new Date(s.start_time).toLocaleString()}</p>
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="glass p-5">
+              <p className="text-[11px] uppercase tracking-wider text-white/40">Start Time</p>
+              <p className="mt-1 text-sm font-medium">{new Date(s.start_time).toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 uppercase">Duration</p>
-              <p className="text-sm font-medium text-gray-900">{formatDuration(s.duration_seconds)}</p>
+            <div className="glass p-5">
+              <p className="text-[11px] uppercase tracking-wider text-white/40">Duration</p>
+              <p className="mt-1 text-sm font-medium">{formatDuration(s.duration_seconds)}</p>
             </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 uppercase">Events</p>
-              <p className="text-sm font-medium text-gray-900">{totalEvents}</p>
+            <div className="glass p-5">
+              <p className="text-[11px] uppercase tracking-wider text-white/40">Events</p>
+              <p className="mt-1 text-sm font-medium">{totalEvents}</p>
             </div>
           </div>
 
-          {s.intent && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-8">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Inferred Intent</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Type:</span>{" "}
-                  <span className="font-medium">{s.intent.session_type || "—"}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Goal:</span>{" "}
-                  <span className="font-medium">{s.intent.goal || "—"}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Confidence:</span>{" "}
-                  <span className="font-medium">{s.intent.goal_confidence != null ? `${(s.intent.goal_confidence * 100).toFixed(0)}%` : "—"}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Category:</span>{" "}
-                  <span className="font-medium">{s.intent.category || "—"}</span>
-                </div>
-                {s.intent.tags.length > 0 && (
-                  <div className="col-span-2">
-                    <span className="text-gray-500">Tags:</span>{" "}
-                    {s.intent.tags.map(tag => (
-                      <span key={tag} className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded mr-1">{tag}</span>
-                    ))}
+          <AnimatePresence mode="wait">
+            {s.intent && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass p-5 mb-8"
+              >
+                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#7f77dd]" strokeWidth={1.5} />
+                  Inferred Intent
+                </h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-white/40">Type:</span>{" "}
+                    <span className="font-medium text-white/80">{s.intent.session_type || "—"}</span>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                  <div>
+                    <span className="text-white/40">Goal:</span>{" "}
+                    <span className="font-medium text-white/80">{s.intent.goal || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-white/40">Confidence:</span>{" "}
+                    <span className={`font-medium ${confidenceColor(s.intent.goal_confidence)}`}>
+                      {s.intent.goal_confidence != null ? `${(s.intent.goal_confidence * 100).toFixed(0)}%` : "—"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-white/40">Category:</span>{" "}
+                    <span className="font-medium text-white/80">{s.intent.category || "—"}</span>
+                  </div>
+                  {s.intent.tags.length > 0 && (
+                    <div className="col-span-2 flex flex-wrap gap-1.5">
+                      {s.intent.tags.map(tag => (
+                        <span key={tag} className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-xs text-white/60">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-6 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Event Timeline</h3>
-              <span className="text-xs text-gray-500">
-                Showing {s.events.length} of {totalEvents} events
+          <div className="glass overflow-hidden">
+            <div className="px-6 py-4 flex items-center justify-between border-b border-white/5">
+              <h3 className="text-sm font-semibold">Event Timeline</h3>
+              <span className="text-xs text-white/40">
+                {s.events.length} of {totalEvents} events
               </span>
             </div>
-            <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
-              {s.events.map(event => (
-                <div key={event.event_id} className="px-6 py-3 hover:bg-gray-50 flex items-start gap-3">
-                  <span className="text-lg flex-shrink-0">{eventIcon(event.event_type)}</span>
-                  <span className="text-sm text-gray-700">{formatEvent(event)}</span>
-                </div>
-              ))}
+            <div className="divide-y divide-white/[0.03] max-h-[600px] overflow-y-auto">
+              <AnimatePresence>
+                {s.events.map((event, i) => {
+                  const meta = eventTypeMeta(event.event_type)
+                  const Icon = meta.icon
+                  const time = new Date(event.timestamp).toLocaleTimeString()
+                  return (
+                    <motion.div
+                      key={event.event_id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.02, duration: 0.2 }}
+                      className="px-6 py-3 hover:bg-white/[0.02] flex items-start gap-3 transition-colors"
+                    >
+                      <div className="icon-tile shrink-0 w-8 h-8">
+                        <Icon className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-white/40 font-mono">{time}</p>
+                        <p className="text-sm text-white/70 mt-0.5">
+                          {event.event_type === "window_focus" && (event.window_title || event.process_name) && `${event.window_title || "unknown"} (${event.process_name || "?"})`}
+                          {event.event_type === "screenshot" && "Screenshot captured"}
+                          {event.event_type === "input_activity" && `Input: ${event.clicks_per_min ?? 0} clicks/min, ${event.keystrokes_per_min ?? 0} keys/min`}
+                          {event.event_type !== "window_focus" && event.event_type !== "screenshot" && event.event_type !== "input_activity" && event.event_type}
+                        </p>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-white/30 shrink-0 mt-0.5">{meta.label}</span>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
             </div>
             {hasMore && (
-              <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 text-center">
+              <div className="px-6 py-4 border-t border-white/5 text-center">
                 <button
                   onClick={loadMoreEvents}
                   disabled={detailLoading}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:text-gray-400"
+                  className="pill pill-hover text-xs cursor-pointer"
                 >
+                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {detailLoading ? "Loading..." : "Load More"}
                 </button>
               </div>
@@ -212,17 +253,30 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Insight Monitor</h1>
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-30 mx-6 mt-6">
+        <div className="flex items-center justify-between rounded-full border border-white/8 bg-[#0a0a0e]/80 px-4 py-2 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_40px_-20px_rgba(0,0,0,0.8)]">
           <div className="flex items-center gap-3">
-            <span
-              className={`w-3 h-3 rounded-full ${agentOnline ? "bg-green-500" : "bg-red-400"}`}
-              title={agentOnline ? "Agent Online" : "Agent Offline"}
-            />
-            <span className="text-sm text-gray-500">
-                {loading ? "Checking..." : agentOnline ? `Capture Agent: Online v${health?.agent?.version}` : "Capture Agent: Offline"}
+            <div className="relative grad-border grad-border-active flex h-9 w-9 items-center justify-center">
+              <div className="absolute inset-[1px] rounded-[15px] bg-[#0a0a0e]" />
+              <Sparkles className="relative h-4 w-4 text-[#7f77dd]" />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold tracking-tight">Insight Monitor</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-white/40">Activity Intelligence</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`pill text-xs ${agentOnline ? "pill-hover" : ""}`}>
+              <span className="relative inline-flex h-1.5 w-1.5">
+                {agentOnline && (
+                  <span className="absolute inset-0 animate-ping rounded-full bg-[#1d9e75] opacity-60" />
+                )}
+                <span className={`relative h-1.5 w-1.5 rounded-full ${agentOnline ? "bg-[#1d9e75]" : "bg-[#d85a30]"}`} />
+              </span>
+              <span className="text-xs">
+                {loading ? "Checking..." : agentOnline ? `Online v${health?.agent?.version}` : "Offline"}
+              </span>
             </span>
           </div>
         </div>
@@ -230,68 +284,107 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900">Sessions</h2>
-          <p className="text-gray-500 mt-1">Monitor your computer activity sessions</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-white/40">Live Monitor</p>
+          <h1 className="bg-gradient-to-b from-white to-white/60 bg-clip-text text-3xl font-semibold tracking-tight text-transparent md:text-4xl">
+            Sessions
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-white/55">Monitor your computer activity sessions</p>
         </div>
 
-        {loading ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400 text-sm">
-            Loading sessions...
-          </div>
-        ) : sessions.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700">No sessions recorded yet</p>
-            </div>
-            <div className="p-6 text-center text-gray-400 text-sm">
-              Start the capture agent to begin recording sessions.
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Start</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Duration</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Events</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Apps</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Goal</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Confidence</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sessions.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => openSession(s.id)}>
-                    <td className="px-4 py-3">{statusBadge(s.status)}</td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {new Date(s.start_time).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {formatDuration(s.duration_seconds)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{s.event_count}</td>
-                    <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate">
-                      {(() => {
-                        try {
-                          const apps = JSON.parse(s.active_apps || "[]")
-                          return apps.join(", ") || "—"
-                        } catch {
-                          return s.active_apps || "—"
-                        }
-                      })()}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{s.session_type || "—"}</td>
-                    <td className="px-4 py-3 text-gray-700 max-w-[200px] truncate" title={s.goal || undefined}>{s.goal || "—"}</td>
-                    <td className="px-4 py-3 text-gray-700">{s.confidence != null ? `${(s.confidence * 100).toFixed(0)}%` : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="glass p-8 text-center"
+            >
+              <div className="flex items-center justify-center gap-2 text-sm text-white/40">
+                <Activity className="h-4 w-4 animate-pulse" strokeWidth={1.5} />
+                Loading sessions...
+              </div>
+            </motion.div>
+          ) : sessions.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-white/5">
+                <p className="text-sm font-medium text-white/70">No sessions recorded yet</p>
+              </div>
+              <div className="p-6 text-center text-sm text-white/40">
+                Start the capture agent to begin recording sessions.
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="sessions"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass overflow-hidden"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Start</th>
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Duration</th>
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Events</th>
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Apps</th>
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Type</th>
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Goal</th>
+                      <th className="text-left px-4 py-3 font-medium text-white/40 text-[11px] uppercase tracking-wider">Confidence</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.03]">
+                    {sessions.map((s) => (
+                      <motion.tr
+                        key={s.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-white/[0.02] cursor-pointer transition-colors"
+                        onClick={() => openSession(s.id)}
+                      >
+                        <td className="px-4 py-3">{statusBadge(s.status)}</td>
+                        <td className="px-4 py-3 text-white/70">
+                          {new Date(s.start_time).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-white/70">
+                          {formatDuration(s.duration_seconds)}
+                        </td>
+                        <td className="px-4 py-3 text-white/70">{s.event_count}</td>
+                        <td className="px-4 py-3 text-white/70 max-w-[200px] truncate">
+                          {(() => {
+                            try {
+                              const apps = JSON.parse(s.active_apps || "[]")
+                              return apps.join(", ") || "—"
+                            } catch {
+                              return s.active_apps || "—"
+                            }
+                          })()}
+                        </td>
+                        <td className="px-4 py-3 text-white/70">{s.session_type || "—"}</td>
+                        <td className="px-4 py-3 text-white/70 max-w-[200px] truncate" title={s.goal || undefined}>{s.goal || "—"}</td>
+                        <td className="px-4 py-3">
+                          {s.confidence != null ? (
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${bgConfidence(s.confidence)}`}>
+                              {(s.confidence * 100).toFixed(0)}%
+                            </span>
+                          ) : (
+                            <span className="text-white/30">—</span>
+                          )}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   )
