@@ -51,7 +51,7 @@ Response: { "status": "closed"|"already_closed", "session_id": "uuid" }
 // RawEvent
 interface RawEvent {
   event_id: string;
-  event_type: "window_focus" | "screenshot" | "input_activity" | "url_context" | "session_boundary";
+  event_type: "window_focus" | "screenshot" | "input_activity" | "url_context" | "session_boundary" | "user_away" | "user_back";
   timestamp: string; // ISO 8601
   source: string;
   window_title?: string;

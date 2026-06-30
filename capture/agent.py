@@ -18,6 +18,7 @@ class CaptureAgent:
         api_url: str | None = None,
         screenshot_dir: str | None = None,
         interval: int | None = None,
+        idle_threshold: int | None = None,
     ):
         self.api_url = api_url if api_url is not None else os.getenv("API_URL", "http://localhost:8002")
         screenshot_dir_path = screenshot_dir if screenshot_dir is not None else os.getenv(
@@ -32,8 +33,19 @@ class CaptureAgent:
         self.event_sender = EventSender(self.api_url)
 
         self.interval = interval or int(os.getenv("CAPTURE_INTERVAL_SECONDS", "30"))
+        # When the user has not produced any input for this many seconds,
+        # stop window_focus/screenshot sampling and emit a user_away marker.
+        # Set to 0 to disable the behaviour entirely.
+        self.idle_threshold = (
+            idle_threshold
+            if idle_threshold is not None
+            else int(os.getenv("IDLE_THRESHOLD_SECONDS", "120"))
+        )
         self.running = False
         self._last_heartbeat = 0.0
+        # Tracking the previous idle state lets us emit user_away/user_back
+        # marker events exactly once per transition rather than every loop.
+        self._was_idle: bool | None = None
 
     def _send_heartbeat(self):
         self.event_sender.send_heartbeat()
@@ -41,7 +53,10 @@ class CaptureAgent:
     def start(self):
         self.running = True
         logger.info(
-            "Capture agent started (api=%s, interval=%ds)", self.api_url, self.interval
+            "Capture agent started (api=%s, interval=%ds, idle_threshold=%ds)",
+            self.api_url,
+            self.interval,
+            self.idle_threshold,
         )
 
         self.window_tracker.start()
@@ -52,13 +67,23 @@ class CaptureAgent:
         try:
             while self.running:
                 now = time.time()
+                is_idle = self._is_user_idle()
+                self._maybe_emit_idle_marker(is_idle)
 
-                self._send_window_event()
+                if not is_idle:
+                    self._send_window_event()
 
-                if now - last_screenshot >= self.interval:
-                    self._send_screenshot_event()
-                    last_screenshot = now
+                    if now - last_screenshot >= self.interval:
+                        self._send_screenshot_event()
+                        last_screenshot = now
+                else:
+                    # Keep last_screenshot fresh so a screenshot is taken
+                    # immediately after the user comes back.
+                    last_screenshot = 0.0
 
+                # Always sample the input activity stream so dashboards see
+                # the zero counts and the session builder can still detect
+                # activity transitions (#91).
                 self._send_input_event()
 
                 if now - self._last_heartbeat >= 30:
@@ -68,6 +93,27 @@ class CaptureAgent:
                 time.sleep(5)
         except KeyboardInterrupt:
             self.stop()
+
+    def _is_user_idle(self) -> bool:
+        """True when the user is considered idle right now."""
+        if self.idle_threshold <= 0:
+            return False
+        idle_for = self.input_monitor.seconds_since_last_input()
+        if idle_for is None:
+            # No input seen yet — cannot prove activity; treat as active so
+            # we capture the first period before deciding to go idle.
+            return False
+        return idle_for >= self.idle_threshold
+
+    def _maybe_emit_idle_marker(self, is_idle: bool):
+        """Send a user_away / user_back event iff the idle state changed."""
+        prev = self._was_idle
+        self._was_idle = is_idle
+        if prev is None or prev == is_idle:
+            return
+        marker = "user_away" if is_idle else "user_back"
+        logger.info("User transition detected: %s", marker)
+        self.event_sender.send({"event_type": marker})
 
     def _send_window_event(self):
         window_info = self.window_tracker.get_active_window()

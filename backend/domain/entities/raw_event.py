@@ -12,6 +12,8 @@ class EventType(str, Enum):
     INPUT_ACTIVITY = "input_activity"
     URL_CONTEXT = "url_context"
     SESSION_BOUNDARY = "session_boundary"
+    USER_AWAY = "user_away"
+    USER_BACK = "user_back"
 
 
 class RawEvent(BaseModel):

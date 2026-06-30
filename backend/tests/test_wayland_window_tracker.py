@@ -161,6 +161,50 @@ class TestWaylandWindowTrackerGetActiveWindow:
         assert tracker.get_active_window()["title"] == "original"
 
 
+class TestWaylandWindowTrackerMissingJsonWarning:
+    """_warn_missing_once() emits a helpful warning but only once."""
+
+    def setup_method(self):
+        WaylandWindowTracker._WARNED_MISSING_JSON = False
+
+    def teardown_method(self):
+        WaylandWindowTracker._WARNED_MISSING_JSON = False
+
+    def test_warns_only_once_when_called_multiple_times(self, caplog):
+        import logging as logging_module
+
+        tracker = WaylandWindowTracker()
+        with caplog.at_level(logging_module.WARNING, logger="capture.window_tracker"):
+            tracker._warn_missing_once()
+            tracker._warn_missing_once()
+            tracker._warn_missing_once()
+
+        warnings = [r for r in caplog.records if "install-gnome-extension.sh" in r.getMessage()]
+        assert len(warnings) == 1
+
+    def test_warns_with_install_command(self, caplog):
+        import logging as logging_module
+
+        tracker = WaylandWindowTracker()
+        with caplog.at_level(logging_module.WARNING, logger="capture.window_tracker"):
+            tracker._warn_missing_once()
+
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("install-gnome-extension.sh" in m for m in messages)
+        assert any("log out" in m.lower() or "log back" in m.lower() for m in messages)
+
+    def test_returns_none_and_warns_when_json_file_missing(self, tmp_path, caplog):
+        import logging as logging_module
+
+        tracker = WaylandWindowTracker()
+        missing = tmp_path / "no-such-file.json"
+        with patch("capture.window_tracker.WAYLAND_WINDOW_JSON", str(missing)):
+            with caplog.at_level(logging_module.WARNING, logger="capture.window_tracker"):
+                result = tracker._read_window_json()
+        assert result is None
+        assert any("install-gnome-extension.sh" in r.getMessage() for r in caplog.records)
+
+
 class TestWaylandWindowTrackerLifecycle:
     """start()/stop() thread lifecycle."""
 
@@ -205,7 +249,7 @@ class TestDetectDisplayServer:
     def test_returns_x11_when_xdg_is_empty(self):
         assert detect_display_server() == "x11"
 
-    @patch.dict("os.environ", {})
+    @patch.dict("os.environ", {}, clear=True)
     def test_returns_x11_when_xdg_unset(self):
         assert detect_display_server() == "x11"
 

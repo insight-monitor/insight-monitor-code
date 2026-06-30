@@ -47,10 +47,11 @@ class LLMService(ILLMService):
 
         if self.provider == "openai":
             from openai import OpenAI
-            kwargs = {"api_key": self.api_key, "timeout": self.timeout_sec}
-            if settings.llm_base_url:
-                kwargs["base_url"] = settings.llm_base_url
-            self._client = OpenAI(**kwargs)
+            self._client = OpenAI(
+                api_key=self.api_key,
+                timeout=self.timeout_sec,
+                base_url=settings.llm_base_url,
+            )
         elif self.provider == "gemini":
             from google import genai
             self._client = genai.Client(api_key=self.api_key)

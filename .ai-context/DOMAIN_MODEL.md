@@ -97,7 +97,7 @@ class RawEvent:
 - `InactivityThreshold(int)` - Minutes, > 0, default 8
 - `SessionStatus(Enum)` - OPEN, CLOSED
 - `SessionType(Enum)` - SKILL_DEVELOPMENT, APPLIED_LEARNING, PEER_COLLABORATION, AMBIGUOUS, PERSONAL
-- `EventType(Enum)` - WINDOW_FOCUS, SCREENSHOT, INPUT_ACTIVITY, URL_CONTEXT, SESSION_BOUNDARY
+- `EventType(Enum)` - WINDOW_FOCUS, SCREENSHOT, INPUT_ACTIVITY, URL_CONTEXT, SESSION_BOUNDARY, USER_AWAY, USER_BACK
 
 ## Domain Events
 ```python
