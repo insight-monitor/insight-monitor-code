@@ -137,6 +137,119 @@ class TestBuildSessionsUseCase:
         assert len(sessions) == 1
         assert sessions[0]["id"] == "session-abc"
 
+    def test_old_event_not_assigned_but_session_marked_closed(self, event_repo, session_repo):
+        """Regression for #91: idle sessions must be auto-closed even when no
+        new event has been buffered; the system polls continuously and a
+        session whose last activity is older than the threshold must
+        transition to status == 'closed'."""
+        # Pre-existing open session whose last event was 30 minutes ago.
+        long_ago = datetime.now(timezone.utc) - timedelta(minutes=30)
+        session_repo.create({
+            "id": "session-idle",
+            "start_time": long_ago.isoformat(),
+            "end_time": long_ago.isoformat(),
+            "status": "open",
+            "event_count": 1,
+            "screenshot_count": 0,
+            "app_sequence": ["code"],
+            "active_apps": ["code"],
+        })
+        # No new events in the buffer.
+        use_case = BuildSessionsUseCase(event_repo, session_repo)
+
+        closed = use_case.auto_close_inactive_sessions()
+
+        assert closed == 1
+        assert session_repo.find_by_id("session-idle")["status"] == "closed"
+
+    def test_execute_runs_inactivity_sweep_with_no_new_events(self, event_repo, session_repo):
+        """>execute() must close idle sessions even when find_unassigned() returns nothing.
+
+        Previously the closing logic lived inside the `if unassigned:` branch
+        so it never ran during silent periods. This test pins the fix for #91.
+        """
+        long_ago = datetime.now(timezone.utc) - timedelta(minutes=120)
+        session_repo.create({
+            "id": "session-idle-2",
+            "start_time": long_ago.isoformat(),
+            "end_time": long_ago.isoformat(),
+            "status": "open",
+            "event_count": 1,
+            "screenshot_count": 0,
+            "app_sequence": ["firefox"],
+            "active_apps": ["firefox"],
+        })
+        use_case = BuildSessionsUseCase(event_repo, session_repo)
+        use_case.execute()
+        assert session_repo.find_by_id("session-idle-2")["status"] == "closed"
+
+    def test_recent_session_is_not_auto_closed(self, event_repo, session_repo):
+        recent = datetime.now(timezone.utc) - timedelta(minutes=2)
+        session_repo.create({
+            "id": "session-fresh",
+            "start_time": recent.isoformat(),
+            "end_time": recent.isoformat(),
+            "status": "open",
+            "event_count": 1,
+            "screenshot_count": 0,
+            "app_sequence": ["code"],
+            "active_apps": ["code"],
+        })
+        use_case = BuildSessionsUseCase(event_repo, session_repo)
+        use_case.auto_close_inactive_sessions()
+        assert session_repo.find_by_id("session-fresh")["status"] == "open"
+
+    def test_session_without_end_time_uses_start_time(self, event_repo, session_repo):
+        """Edge case: session with NULL end_time should still be evaluated
+        against start_time for the inactivity sweep."""
+        long_ago = datetime.now(timezone.utc) - timedelta(minutes=60)
+        session_repo.create({
+            "id": "session-no-end",
+            "start_time": long_ago.isoformat(),
+            "end_time": None,
+            "status": "open",
+            "event_count": 0,
+            "screenshot_count": 0,
+            "app_sequence": [],
+            "active_apps": [],
+        })
+        use_case = BuildSessionsUseCase(event_repo, session_repo)
+        use_case.auto_close_inactive_sessions()
+        assert session_repo.find_by_id("session-no-end")["status"] == "closed"
+
+    def test_already_closed_session_is_not_touched(self, event_repo, session_repo):
+        long_ago = datetime.now(timezone.utc) - timedelta(minutes=120)
+        session_repo.create({
+            "id": "session-already-closed",
+            "start_time": long_ago.isoformat(),
+            "end_time": long_ago.isoformat(),
+            "status": "closed",
+            "event_count": 1,
+            "screenshot_count": 0,
+            "app_sequence": [],
+            "active_apps": [],
+        })
+        use_case = BuildSessionsUseCase(event_repo, session_repo)
+        closed = use_case.auto_close_inactive_sessions()
+        assert closed == 0  # We don't count it because it was already closed.
+
+    def test_session_with_malformed_timestamp_is_skipped(self, event_repo, session_repo, caplog):
+        session_repo.create({
+            "id": "session-bad-ts",
+            "start_time": "this-is-not-a-date",
+            "end_time": None,
+            "status": "open",
+            "event_count": 0,
+            "screenshot_count": 0,
+            "app_sequence": [],
+            "active_apps": [],
+        })
+        use_case = BuildSessionsUseCase(event_repo, session_repo)
+        with caplog.at_level("WARNING", logger="backend.application.use_cases.build_sessions"):
+            closed = use_case.auto_close_inactive_sessions()
+        assert closed == 0  # We don't crash.
+        assert session_repo.find_by_id("session-bad-ts")["status"] == "open"
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tests: GetSessionUseCase

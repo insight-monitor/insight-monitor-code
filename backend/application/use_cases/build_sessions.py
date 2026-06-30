@@ -4,6 +4,7 @@ Orchestrates the logic of grouping unassigned events into work sessions.
 Only depends on ports (IEventRepository, ISessionRepository); never SQLite directly.
 """
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -24,36 +25,83 @@ class BuildSessionsUseCase:
     def execute(self) -> int:
         """
         Processes all unassigned events and groups them into sessions.
+        Always runs the inactivity check, even if no new events arrived,
+        so idle sessions still transition to status == "closed".
         Returns the number of sessions created or updated.
         """
-        unassigned = self.event_repo.find_unassigned()
-        if not unassigned:
-            return 0
-
-        open_sessions = self.session_repo.find_all(status="open")
         sessions_touched = 0
+        unassigned = self.event_repo.find_unassigned()
 
-        for event in unassigned:
-            candidate = self._find_session_for_event(event, open_sessions)
-            if candidate:
-                self._assign_event_to_session(event, candidate)
-                self._update_session_stats(candidate, event)
-                sessions_touched += 1
-            else:
-                new_session_id = self._create_new_session(event)
-                self._assign_event_to_session(event, {"id": new_session_id})
-                new_session = self.session_repo.find_by_id(new_session_id)
-                if new_session:
-                    open_sessions.append(new_session)
-                sessions_touched += 1
+        if unassigned:
+            open_sessions = self.session_repo.find_all(status="open")
+            for event in unassigned:
+                candidate = self._find_session_for_event(event, open_sessions)
+                if candidate:
+                    self._assign_event_to_session(event, candidate)
+                    self._update_session_stats(candidate, event)
+                    sessions_touched += 1
+                else:
+                    new_session_id = self._create_new_session(event)
+                    self._assign_event_to_session(event, {"id": new_session_id})
+                    new_session = self.session_repo.find_by_id(new_session_id)
+                    if new_session:
+                        open_sessions.append(new_session)
+                    sessions_touched += 1
 
-        # Check which sessions should be closed due to inactivity
-        for session in open_sessions:
-            self._close_if_inactive(session)
+        # Always re-fetch the open sessions before the inactivity sweep so
+        # that we don't miss sessions that have been idle for cycles when no
+        # new events arrived. This is the fix for #91: previously, the
+        # closing loop only ran inside the `if unassigned` branch, so
+        # sessions whose last event was more than the threshold ago never
+        # transitioned to status == "closed" until something new arrived.
+        self.auto_close_inactive_sessions()
 
         return sessions_touched
 
-    # ─────────────────────────── private helpers ───────────────────────────
+    # ─────────────────────────── inactivity sweep ──────────────────────
+
+    def auto_close_inactive_sessions(self) -> int:
+        """Close every open session whose last activity is older than the threshold.
+
+        Returns the number of sessions whose status was changed to "closed".
+        Safe to call repeatedly (idempotent). A fresh repo read is done each
+        call so we never operate on a stale in-memory list.
+        """
+        now = datetime.now(timezone.utc)
+        threshold_min = INACTIVITY_THRESHOLD
+        closed_count = 0
+
+        for session in self.session_repo.find_all(status="open"):
+            # Only consider sessions that have actually started.
+            last_activity_str = session.get("end_time") or session.get("start_time")
+            if not last_activity_str:
+                continue
+            try:
+                last_activity = datetime.fromisoformat(last_activity_str)
+                if last_activity.tzinfo is None:
+                    last_activity = last_activity.replace(tzinfo=timezone.utc)
+            except (ValueError, TypeError):
+                logger.warning(
+                    "Session %s has malformed timestamp %s; skipping",
+                    session.get("id"),
+                    last_activity_str,
+                )
+                continue
+
+            gap_min = (now - last_activity).total_seconds() / 60
+            if gap_min > threshold_min:
+                self.session_repo.update(session["id"], {"status": "closed"})
+                logger.info(
+                    "Session %s auto-closed (gap=%.1fmin > threshold=%dmin)",
+                    session["id"],
+                    gap_min,
+                    threshold_min,
+                )
+                closed_count += 1
+
+        return closed_count
+
+    # ─────────────────────────── private helpers ────────────────────────
 
     def _find_session_for_event(self, event: dict, open_sessions: list[dict]) -> dict | None:
         event_ts = self._parse_ts(event["timestamp"])
@@ -93,7 +141,6 @@ class BuildSessionsUseCase:
         self.event_repo.assign_to_session(event["event_id"], session["id"])
 
     def _update_session_stats(self, session: dict, event: dict):
-        import json
         event_count = (session.get("event_count") or 0) + 1
         screenshot_count = (session.get("screenshot_count") or 0) + (
             1 if event.get("event_type") == "screenshot" else 0
@@ -135,19 +182,6 @@ class BuildSessionsUseCase:
         })
         # Update in-memory dict so the loop iteration stays coherent
         session.update({"end_time": end_time, "event_count": event_count, "status": status})
-
-    def _close_if_inactive(self, session: dict):
-        if not session.get("end_time"):
-            return
-        try:
-            last_event = self._parse_ts(session["end_time"])
-        except (ValueError, TypeError):
-            return
-        now = datetime.now(timezone.utc)
-        gap_min = (now - last_event).total_seconds() / 60
-        if gap_min > INACTIVITY_THRESHOLD:
-            self.session_repo.update(session["id"], {"status": "closed"})
-            logger.info("Session %s auto-closed (gap=%.1fmin)", session["id"], gap_min)
 
     @staticmethod
     def _parse_ts(ts: str) -> datetime:
