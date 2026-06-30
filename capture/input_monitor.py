@@ -269,7 +269,7 @@ class InputMonitor:
         # Read in a busy loop. select() cannot span InputDevices across different
         # fds easily so we poll each in turn with a short timeout.
 
-        devices = {d.fd: d for d in keyboards + mice}
+        devices: dict[int, Any] = {d.fd: d for d in keyboards + mice}
         try:
             while self._running:
                 if not devices:
