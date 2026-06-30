@@ -12,6 +12,11 @@ venv/
 *.db-wal
 frontend/
 
+# Screenshots
+backend/data/screenshots/
+capture/data/screenshots/
+data/screenshots/
+
 # Node
 node_modules/
 

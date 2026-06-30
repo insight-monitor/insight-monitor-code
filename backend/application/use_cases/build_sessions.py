@@ -183,6 +183,19 @@ class BuildSessionsUseCase:
         # Update in-memory dict so the loop iteration stays coherent
         session.update({"end_time": end_time, "event_count": event_count, "status": status})
 
+    def _close_if_inactive(self, session: dict):
+        if not session.get("end_time"):
+            return
+        try:
+            last_event = self._parse_ts(session["end_time"])
+        except (ValueError, TypeError):
+            return
+        now = datetime.now(timezone.utc)
+        gap_min = (now - last_event).total_seconds() / 60
+        if gap_min > INACTIVITY_THRESHOLD:
+            self.session_repo.update(session["id"], {"status": "closed"})
+            logger.info("Session %s auto-closed (gap=%.1fmin)", session["id"], gap_min)
+
     @staticmethod
     def _parse_ts(ts: str) -> datetime:
         try:
