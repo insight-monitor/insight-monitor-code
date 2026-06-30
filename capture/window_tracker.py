@@ -168,6 +168,9 @@ class WaylandWindowTracker:
     See ``docs/capture-agent/wayland-setup.md`` for setup instructions.
     """
 
+    _WARNED_MISSING_JSON: bool = False
+    _WARNED_EMPTY_JSON: bool = False
+
     def __init__(self):
         self._active_window: dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -184,7 +187,7 @@ class WaylandWindowTracker:
         while self._running:
             try:
                 data = self._read_window_json()
-                if data:
+                if data and all(data.get(k) for k in ("title", "process", "pid")):
                     with self._lock:
                         self._active_window = data
             except Exception as e:
@@ -194,29 +197,50 @@ class WaylandWindowTracker:
     def _read_window_json(self) -> dict[str, Any] | None:
         path = Path(WAYLAND_WINDOW_JSON)
         if not path.exists():
+            self._warn_missing_once()
             return None
 
         try:
             content = path.read_text(encoding="utf-8")
-            raw = json.loads(content)
-            info: dict[str, Any] = {
-                "title": raw.get("title"),
-                "process": raw.get("wm_class"),
-                "pid": raw.get("pid"),
-            }
-
-            if info.get("process") and info["process"].lower() in BROWSER_PROCESSES:
-                tab_title = raw.get("title")
-                if tab_title:
-                    url = extract_url_from_title(tab_title)
-                    if url:
-                        info["url"] = url
-                    info["browser_tab_title"] = tab_title
-
-            return info
-        except (json.JSONDecodeError, OSError) as e:
+        except OSError as e:
             logger.debug("Failed to read window JSON: %s", e)
             return None
+
+        try:
+            raw = json.loads(content)
+        except json.JSONDecodeError as e:
+            logger.debug("Failed to parse window JSON: %s", e)
+            return None
+
+        info: dict[str, Any] = {
+            "title": raw.get("title"),
+            "process": raw.get("wm_class"),
+            "pid": raw.get("pid"),
+        }
+
+        if info.get("process") and info["process"].lower() in BROWSER_PROCESSES:
+            tab_title = raw.get("title")
+            if tab_title:
+                url = extract_url_from_title(tab_title)
+                if url:
+                    info["url"] = url
+                info["browser_tab_title"] = tab_title
+
+        return info
+
+    def _warn_missing_once(self):
+        """Log a single warning if the GNOME extension JSON is absent."""
+        if not WaylandWindowTracker._WARNED_MISSING_JSON:
+            WaylandWindowTracker._WARNED_MISSING_JSON = True
+            logger.warning(
+                "%s not found. Window tracking is disabled. "
+                "Install the GNOME Shell extension with: "
+                "scripts/install-gnome-extension.sh",
+                WAYLAND_WINDOW_JSON,
+            )
+            logger.warning(
+                "Then log out and back in (Wayland) so GNOME Shell can load the extension."
+            )
 
     def get_active_window(self) -> dict[str, Any]:
         with self._lock:
