@@ -10,21 +10,21 @@ jobs:
   verify-db-schema:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify DB schema matches docs
         run: python scripts/verify_db_schema.py
 
   verify-api-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify API routes match docs
         run: python scripts/verify_api_docs.py
 
   verify-adr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check ADR for arch changes
