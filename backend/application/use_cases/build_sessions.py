@@ -119,6 +119,11 @@ class BuildSessionsUseCase:
         except (ValueError, TypeError):
             pass
 
+        status = session.get("status", "open")
+        if event.get("event_type") == "session_boundary" and event.get("session_boundary_type") == "close":
+            status = "closed"
+            logger.info("Session %s explicitly closed by boundary event", session["id"])
+
         self.session_repo.update(session["id"], {
             "end_time": end_time,
             "duration_seconds": duration,
@@ -126,9 +131,10 @@ class BuildSessionsUseCase:
             "event_count": event_count,
             "screenshot_count": screenshot_count,
             "active_apps": active_apps,
+            "status": status,
         })
         # Update in-memory dict so the loop iteration stays coherent
-        session.update({"end_time": end_time, "event_count": event_count})
+        session.update({"end_time": end_time, "event_count": event_count, "status": status})
 
     def _close_if_inactive(self, session: dict):
         if not session.get("end_time"):
