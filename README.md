@@ -56,7 +56,7 @@ npm run simulate    # Sends simulated Riwi/BPO events to the API
 │   ├── agent.py          Main loop: polls OS APIs, sends events
 │   ├── window_tracker.py xdotool + xprop (window focus, URL context)
 │   ├── screenshot_capture.py  mss wrapper (periodic screenshots)
-│   ├── input_monitor.py  pynput (clicks/min, keystrokes/min)
+│   ├── input_monitor.py  evdev (clicks/min, keystrokes/min) with pynput fallback
 │   └── event_sender.py   HTTP client → POST events to API
 │
 ├── backend/              Layer 2 — Backend API (Clean Architecture)
@@ -142,7 +142,7 @@ Full interactive docs at `http://localhost:8002/docs`.
 ## Team Guide
 
 ### Capture Agent (Python) — Working (requires X11)
-Files: `capture/`. Captures screenshots (`mss`), input frequency (`pynput`), window focus + browser tabs (`xdotool` + `xprop`). Sends events to API via HTTP. Configurable via env vars. Requires Linux with X11 (not Wayland).
+Files: `capture/`. Captures screenshots (`mss`), input frequency (`evdev` with `pynput` fallback on Linux), window focus + browser tabs (`xdotool` + `xprop` on X11 / GNOME extension on Wayland). Sends events to API via HTTP. Configurable via env vars. Requires Linux (X11 and Wayland supported).
 
 ### Backend API (FastAPI + SQLite + Clean Architecture) — Working with all CRUD routes + session builder
 Files: `backend/`. Includes Clean Architecture layers (Domain, Application, Infrastructure), DI composition root, unit of work for transaction boundaries, background session builder, batch ingest, inference pipeline (LLM service, prompt builder, intent parser), and manual close endpoint.

@@ -24,7 +24,7 @@ Application name, process ID, window title, foreground/background state. Collect
 Active tab domain and page title extracted from window title heuristics. Full DOM is never collected.
 
 ### Input activity monitoring
-Click and keystroke *frequency* (clicks/min, keystrokes/min) — not content. Uses `pynput`.
+Click and keystroke *frequency* (clicks/min, keystrokes/min) — not content. Uses `evdev` (preferred, X11 and Wayland) with `pynput` fallback. The Linux user must be in the `input` group for evdev to read `/dev/input/event*`.
 
 ## Currently implemented EventTypes
 
