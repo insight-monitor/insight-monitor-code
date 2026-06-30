@@ -19,6 +19,7 @@ class Settings:
         self.llm_provider: str = os.getenv("LLM_PROVIDER", "openai")
         self.api_key: str | None = os.getenv("API_KEY")
         self.llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+        self.llm_base_url: str | None = os.getenv("LLM_BASE_URL")
         self.inference_timeout_sec: int = int(
             os.getenv("INFERENCE_TIMEOUT_SEC", "30")
         )
