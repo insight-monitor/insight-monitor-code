@@ -20,6 +20,7 @@ import os
 import select  # at module level so tests can patch it
 import threading
 import time
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
