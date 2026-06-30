@@ -26,6 +26,8 @@ Active tab domain and page title extracted from window title heuristics. Full DO
 ### Input activity monitoring
 Click and keystroke *frequency* (clicks/min, keystrokes/min) — not content. Uses `evdev` (preferred, X11 and Wayland) with `pynput` fallback. The Linux user must be in the `input` group for evdev to read `/dev/input/event*`.
 
+When the user has not produced any input for `IDLE_THRESHOLD_SECONDS` (default 120 s) the agent stops emitting `window_focus` and `screenshot` events and sends a single `user_away` marker; when activity resumes it sends a single `user_back` marker and starts sampling again. `input_activity` events keep flowing so the dashboard always sees the zero counts and the session builder continues to flip status. Always idle since the engine started? We cannot tell, so the first iteration is treated as active.
+
 ## Currently implemented EventTypes
 
 | Event Type | Source | Data captured |

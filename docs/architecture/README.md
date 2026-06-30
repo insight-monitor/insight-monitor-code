@@ -45,7 +45,7 @@ version: 2.0.0
 
 | Layer | Technology | Justification |
 |---|---|---|
-| Capture agent | Python 3.11+ | Best ecosystem for OS-level hooks (`xdotool`, `pynput`, `mss`) |
+| Capture agent | Python 3.11+ | Best ecosystem for OS-level hooks (`xdotool`, `evdev`, `mss`) |
 | Backend API | FastAPI + Uvicorn | Fast to build, Pydantic integration, automatic OpenAPI docs |
 | Database | SQLite | Zero-config, file-based, sufficient for single-user MVP |
 | LLM | Gemini 2.0 Flash | Native multimodal, cheapest API, 1M token context |
@@ -93,7 +93,7 @@ insight-monitor/
 │   ├── agent.py                # Main loop: poll OS APIs
 │   ├── window_tracker.py       # xdotool wrapper
 │   ├── screenshot_capture.py   # mss wrapper
-│   ├── input_monitor.py        # pynput frequency capture
+│   ├── input_monitor.py        # evdev (pynput fallback) frequency capture + idle metadata
 │   └── event_sender.py         # POST RawEvents to API
 │
 ├── backend/                    # Layer 2 — API + Storage (Clean Architecture)

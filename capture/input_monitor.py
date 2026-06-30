@@ -96,6 +96,14 @@ class InputMonitor:
         self._start_time = 0.0
         self._thread: threading.Thread | None = None
         self._backend: str = _BACKEND_NONE
+        # Time of the last observed input event (click or keypress), or
+        # 0.0 if no input has been seen yet. Used by CaptureAgent to
+        # implement idle detection (#92).
+        self._last_input_at: float = 0.0
+        # Total cumulative counts since the monitor started, used by tests
+        # and exposed via :meth:`total_count`.
+        self._total_clicks: int = 0
+        self._total_keys: int = 0
 
     # ─────────────────────────── lifecycle ────────────────────────────
 
@@ -131,6 +139,43 @@ class InputMonitor:
     def backend(self) -> str:
         """Return the backend in use after start(): ``evdev``, ``pynput`` or ``none``."""
         return self._backend
+
+    def seconds_since_last_input(self) -> float | None:
+        """Seconds since the last click or key press, or None if no input yet.
+
+        ``idle_for_seconds`` is only meaningful after at least one input
+        event has been recorded, otherwise the agent cannot distinguish
+        'user is idle since the agent started' from 'the monitor never
+        observed any input yet'. Returning ``None`` lets callers pick the
+        appropriate starting stance (typically: emit events for the first
+        measure window, then optional idle detection afterwards).
+        """
+        with self._lock:
+            ts = self._last_input_at
+        if ts <= 0.0:
+            return None
+        return self._now() - ts
+
+    def has_seen_input(self) -> bool:
+        with self._lock:
+            return self._last_input_at > 0.0
+
+    def total_count(self) -> dict:
+        """Return cumulative counts {clicks, keys} since monitor started."""
+        with self._lock:
+            return {"clicks": self._total_clicks, "keys": self._total_keys}
+
+    def _record_input(self, kind: str) -> None:
+        if kind not in ("click", "key"):
+            return
+        with self._lock:
+            self._last_input_at = self._now()
+            if kind == "click":
+                self._click_count += 1
+                self._total_clicks += 1
+            elif kind == "key":
+                self._key_count += 1
+                self._total_keys += 1
 
     # ─────────────────────────── private ──────────────────────────────
 
@@ -259,12 +304,8 @@ class InputMonitor:
         """Read all pending events from ``dev`` and update counters."""
         for event in dev.read():
             kind = _classify_event(event)
-            if kind == "click":
-                with self._lock:
-                    self._click_count += 1
-            elif kind == "key":
-                with self._lock:
-                    self._key_count += 1
+            if kind:
+                self._record_input(kind)
 
     # ────────────── pynput fallback ──────────────
 
@@ -280,12 +321,10 @@ class InputMonitor:
             def on_click(_x, _y, _button, _pressed):
                 if not _pressed:
                     return
-                with self._lock:
-                    self._click_count += 1
+                self._record_input("click")
 
             def on_press(_key):
-                with self._lock:
-                    self._key_count += 1
+                self._record_input("key")
 
             mouse_listener = mouse.Listener(on_click=on_click)
             keyboard_listener = keyboard.Listener(on_press=on_press)

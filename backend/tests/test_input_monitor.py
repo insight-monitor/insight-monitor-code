@@ -240,3 +240,57 @@ class TestPynputBackend:
                 m._monitor()
 
         assert m.backend() == _BACKEND_NONE
+
+
+# ─────────────────────────── idle / last-input tracking ────────────────────
+
+
+class TestIdleTracking:
+    def test_seconds_since_last_input_none_until_first_event(self):
+        m = InputMonitor()
+        assert m.has_seen_input() is False
+        assert m.seconds_since_last_input() is None
+
+    def test_record_input_stamps_last_input(self):
+        m = InputMonitor()
+        with patch.object(m, "_now", return_value=1000.0):
+            m._record_input("click")
+        assert m.has_seen_input() is True
+        # Clock advanced by 120 seconds
+        with patch.object(m, "_now", return_value=1120.0):
+            assert m.seconds_since_last_input() == pytest.approx(120.0)
+
+    def test_record_input_increments_totals_and_window_counters(self):
+        m = InputMonitor()
+        m._record_input("click")
+        m._record_input("key")
+        m._record_input("click")
+        assert m.total_count() == {"clicks": 2, "keys": 1}
+        # Per-window counters are reset by get_metrics(), not by record_input().
+        with m._lock:
+            assert m._click_count == 2
+            assert m._key_count == 1
+
+    def test_record_input_only_accepts_known_kinds(self):
+        m = InputMonitor()
+        m._record_input("bogus")  # silently ignored
+        assert m.total_count() == {"clicks": 0, "keys": 0}
+        assert m.has_seen_input() is False
+
+    def test_evdev_loop_records_last_input(self):
+        m = InputMonitor()
+
+        def make_event(type_, code, value):
+            e = MagicMock()
+            e.type = type_
+            e.code = code
+            e.value = value
+            return e
+
+        dev = MagicMock()
+        dev.read.return_value = [
+            make_event(1, 30, 1),  # letter 'a' counted as key
+        ]
+        m._process_evdev_events(dev)
+        assert m.has_seen_input() is True
+        assert m.total_count() == {"clicks": 0, "keys": 1}
