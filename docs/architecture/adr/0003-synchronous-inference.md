@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[adr]]"
+---
 # ADR-0003: Synchronous Inference (No Celery/Redis)
 
 ## Status

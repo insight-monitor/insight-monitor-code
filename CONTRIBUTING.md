@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[insight-monitor-code]]"
+---
 # Contributing to Insight Monitor
 
 **Welcome!** This guide covers everything you need to contribute effectively: architecture, development workflow, testing, PR process, and review standards.
@@ -399,6 +403,63 @@ When reviewing a PR, verify:
 2. Add migration in `_migrate()`
 3. Update repository methods
 4. Update `docs/data-model/database-schema.md`
+
+---
+
+## Debugging & Observability
+
+### Viewing Live Capture Agent Logs
+
+When testing the capture agent, run it with `DEBUG` log level to see every event being built and sent in real time (window title, process name, URL, PID, etc.):
+
+```bash
+cd /path/to/insight-monitor-code
+
+PYTHONPATH=. python -c "
+import logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(name)s %(levelname)s: %(message)s'
+)
+from capture.agent import CaptureAgent
+agent = CaptureAgent()
+agent.start()
+" 2>&1 | tee /tmp/capture-agent.log
+```
+
+This pipes all output to the terminal **and** saves it to `/tmp/capture-agent.log` for later inspection.
+
+> **Alternative:** If you only need `INFO`-level output (agent start/stop, backend errors, flush counts), the default `logging.basicConfig(level=logging.INFO)` in `agent.py` is sufficient. Just run `PYTHONPATH=. python -m capture.agent`.
+
+---
+
+### Inspecting Events Received by the Backend
+
+The backend exposes a `GET /events` endpoint that returns the most recently ingested events. Use this to verify that `window_title`, `process_name`, `url`, and other fields are being populated correctly:
+
+```bash
+# Last 20 events (pretty-printed)
+curl -s "http://localhost:8002/events?limit=20" | python3 -m json.tool
+
+# Filter for a specific session
+curl -s "http://localhost:8002/events/session/<session_id>?limit=50" | python3 -m json.tool
+
+# Watch events as they arrive (polls every 5 s)
+watch -n 5 'curl -s "http://localhost:8002/events?limit=5" | python3 -m json.tool'
+```
+
+If `process_name`, `window_title`, and `url` appear as `null` in every event, see [Common Issues](#common-issues) below.
+
+---
+
+### Common Issues
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| `process_name`, `window_title`, `url` all `null` | Running on Wayland without the GNOME extension active | Run `bash scripts/install-gnome-extension.sh`, then log out/in; verify with `cat /tmp/insight-window.json` |
+| Screenshots saved as black images | `mss` cannot access the framebuffer on Wayland | Install `grim` (`sudo apt install grim`) and switch the capture backend |
+| Events buffered, not reaching backend | Backend is down or wrong port in `API_URL` | Check `backend/.env` and confirm the server is running on the expected port |
+| `clicks_per_min` / `keystrokes_per_min` always `0.0` | `InputMonitor` requires root or specific udev rules to read `/dev/input/` | Run capture agent with appropriate permissions or configure udev rules |
 
 ---
 

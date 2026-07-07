@@ -45,3 +45,20 @@ scripts/debug_parse_output.txt
 # Local agent skills (private per-dev)
 .agents/
 skills-lock.json
+
+# Abstract Folder compatiblity (Temporal files while abstract configuration is dealt with)
+backend.md
+dashboard.md
+docs.md
+infrastructure.md
+backend/tests.md
+infrastructure/db-enterprise.md
+infrastructure/db-mvp.md
+docs/api.md
+docs/configuration.md
+docs/data-model.md
+docs/capture-agent.md
+docs/architecture.md
+docs/development.md
+docs/inference.md
+docs/architecture/adr.md

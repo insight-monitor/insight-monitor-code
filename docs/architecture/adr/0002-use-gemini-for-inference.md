@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[adr]]"
+---
 # ADR-0002: Use Gemini 2.0 Flash for Inference
 
 ## Status

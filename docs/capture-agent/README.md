@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[capture-agent]]"
+---
 # Capture Agent
 
 The capture agent is Layer 1 of the Insight Monitor architecture. It runs on the user's machine and polls OS APIs to produce `RawEvent` objects.

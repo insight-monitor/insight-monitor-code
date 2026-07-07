@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[docs]]"
+---
 # Real-Time Monitoring Visibility
 
 What you see where — Dashboard (frontend) vs Terminal (capture agent / backend).

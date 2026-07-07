@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[development]]"
+---
 # Testing Guide
 
 ## Running Tests

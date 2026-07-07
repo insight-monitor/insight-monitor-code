@@ -5,6 +5,8 @@ domain: architecture
 priority: critical
 status: accepted
 version: 2.0.0
+parent:
+  - "[[architecture]]"
 ---
 
 # MVP Architecture

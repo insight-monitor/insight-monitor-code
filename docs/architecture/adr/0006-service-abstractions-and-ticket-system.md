@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[adr]]"
+---
 # ADR-0006: Service Abstractions and Expanded Clean Architecture
 
 ## Status

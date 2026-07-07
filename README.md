@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[insight-monitor-code]]"
+---
 # Insight Monitor — Contextual Activity Intelligence
 
 Monitoring that understands *intent*, not just apps.

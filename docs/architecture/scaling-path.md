@@ -6,6 +6,8 @@ priority: medium
 status: review
 version: 2.0.0
 updated: 2026-06-25
+parent:
+  - "[[architecture]]"
 ---
 
 # MVP Scaling Path

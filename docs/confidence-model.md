@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[docs]]"
+---
 # Confidence Model (Confidence Score)
 
 ## Ranges

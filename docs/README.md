@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[docs]]"
+---
 # Insight Monitor — Technical Documentation
 
 This directory contains the **technical documentation** for the Insight Monitor project. Non-technical documentation (narrative, brand, use cases, limitations, risks) lives in the [insight-monitor-docs](https://github.com/insight-monitor/insight-monitor-docs) repository.

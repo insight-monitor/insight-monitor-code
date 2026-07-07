@@ -5,6 +5,8 @@ domain: configuration
 priority: high
 status: review
 version: 0.1.0
+parent:
+  - "[[configuration]]"
 ---
 
 # Configuration Model

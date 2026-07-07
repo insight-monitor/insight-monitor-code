@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[docs]]"
+---
 # Gemini → OpenAI Migration
 
 ## Summary

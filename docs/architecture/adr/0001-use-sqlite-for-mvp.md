@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[adr]]"
+---
 # ADR-0001: Use SQLite for MVP
 
 ## Status

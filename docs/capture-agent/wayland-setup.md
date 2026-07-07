@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[capture-agent]]"
+---
 # Wayland Setup for Capture Agent
 
 The capture agent supports both X11 and Wayland display servers. On Wayland (default on Ubuntu 22.04+), a GNOME Shell extension is required for window tracking since `xdotool`/`xprop` do not work under Wayland.

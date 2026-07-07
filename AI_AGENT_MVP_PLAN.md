@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[insight-monitor-code]]"
+---
 # AI Agent MVP Execution Plan — Days 9-14
 
 **Status**: ARCH-1 through ARCH-11 are **CLOSED**. ARCH-0 (#41) remains open — legacy `pipeline/` folder is still active alongside the new Clean Architecture use cases.

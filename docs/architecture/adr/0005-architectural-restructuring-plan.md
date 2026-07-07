@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[adr]]"
+---
 # ADR-0005: Architectural Restructuring to Clean Architecture
 
 ## Status

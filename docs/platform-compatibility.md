@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[docs]]"
+---
 # Platform Compatibility
 
 ## Supported Platforms

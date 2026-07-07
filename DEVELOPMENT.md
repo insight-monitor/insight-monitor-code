@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[insight-monitor-code]]"
+---
 # Development Quick Reference
 
 ## Common Commands

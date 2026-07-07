@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[development]]"
+---
 # Development Setup
 
 ## Prerequisites

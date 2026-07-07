@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[api]]"
+---
 # API Reference
 
 Full interactive API documentation is available at `http://localhost:8002/docs` (Swagger UI) when the backend is running.

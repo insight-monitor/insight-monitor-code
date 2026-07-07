@@ -6,6 +6,8 @@ priority: high
 status: accepted
 version: 2.0.0
 updated: 2026-06-25
+parent:
+  - "[[data-model]]"
 ---
 
 # Insight Monitor — Architecture Overview

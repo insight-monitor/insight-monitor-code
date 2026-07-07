@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[development]]"
+---
 # Legacy Frontend: AI Support Desk
 
 The `frontend/` directory contains a complete ticket management SPA ("AI Support Desk") built with Vanilla JavaScript and Vite. This is **not** part of the Insight Monitor product.

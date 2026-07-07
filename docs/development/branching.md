@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[development]]"
+---
 # Git Branching Strategy
 
 This repository follows the same convention as the docs repository. See [insight-monitor-docs: Git-branching.md](https://github.com/insight-monitor/insight-monitor-docs/blob/main/000-META/Git-branching.md) for the full strategy.

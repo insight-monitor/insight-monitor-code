@@ -5,6 +5,8 @@ domain: data-model
 priority: high
 status: review
 version: 1.0.0
+parent:
+  - "[[data-model]]"
 ---
 
 # Data Acquisition

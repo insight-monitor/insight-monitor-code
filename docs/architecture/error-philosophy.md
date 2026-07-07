@@ -5,6 +5,8 @@ domain: architecture
 priority: high
 status: accepted
 version: 1.0.0
+parent:
+  - "[[architecture]]"
 ---
 
 # Error Philosophy

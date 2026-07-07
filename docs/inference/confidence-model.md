@@ -5,6 +5,8 @@ domain: inference
 priority: critical
 status: review
 version: 1.0.0
+parent:
+  - "[[inference]]"
 ---
 
 # Confidence Model

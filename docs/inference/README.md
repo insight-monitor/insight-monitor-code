@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[inference]]"
+---
 # Inference Framework
 
 Technical documentation for the LLM inference pipeline.

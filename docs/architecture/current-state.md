@@ -6,6 +6,8 @@ priority: critical
 status: accepted
 version: 2.0.0
 updated: 2026-06-29
+parent:
+  - "[[architecture]]"
 ---
 
 # Current Architecture State (as of 2026-06-29)

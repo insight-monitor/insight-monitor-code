@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[db-enterprise]]"
+---
 # Insight Monitor Enterprise (Phase 2 Full ERD)
 
 This directory contains the local **Docker** infrastructure to spin up the **Complete Entity-Relationship Diagram (ERD)** of the project using MySQL.

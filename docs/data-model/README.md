@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[data-model]]"
+---
 # Data Model
 
 Technical data model documentation.

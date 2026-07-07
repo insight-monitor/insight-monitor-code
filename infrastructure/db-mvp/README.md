@@ -1,3 +1,7 @@
+---
+parent:
+  - "[[db-mvp]]"
+---
 # Insight Monitor MVP (Database Viewer)
 
 ⚠️ **IMPORTANT: This is a DATABASE VIEWER (sqlite-web), NOT a database server.**
