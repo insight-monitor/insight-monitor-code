@@ -1,5 +1,5 @@
 ---
-parent:
+parent: 
   - "[[insight-monitor-code]]"
 ---
 # Contributing to Insight Monitor
